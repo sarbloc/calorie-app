@@ -12,7 +12,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 
 // ─── Donut Chart Colors (Neon Theme) ───────────────────────────────────────
 const MACRO_COLORS = {
-  protein: '#22C55E', // green
+  protein: '#F43F5E', // soft red/pink (rose-500)
   carbs:   '#3B82F6', // blue
   fat:     '#F59E0B', // amber
 }
@@ -71,7 +71,7 @@ function MacroDonutChart({ totals, goals }) {
         position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
         textAlign: 'center', pointerEvents: 'none',
       }}>
-        <div style={{ fontSize: 20, fontWeight: 700, color: '#22C55E' }}>{total}g</div>
+        <div style={{ fontSize: 20, fontWeight: 700, color: '#F43F5E' }}>{total}g</div>
         <div style={{ fontSize: 10, color: '#666', textTransform: 'uppercase' }}>Total</div>
       </div>
       <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginTop: 8 }}>
