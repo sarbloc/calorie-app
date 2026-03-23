@@ -21,11 +21,14 @@ export function useMeals(userId) {
     setLoading(true)
     setError(null)
 
+    const startOfDay = `${todayStr()}T00:00:00`
+    const endOfDay   = `${todayStr()}T23:59:59.999999`
     const { data, error } = await supabase
       .from('meals')
       .select('*')
       .eq('user_id', userId)
-      .eq('date', todayStr())
+      .gte('created_at', startOfDay)
+      .lte('created_at', endOfDay)
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -54,7 +57,7 @@ export function useMeals(userId) {
 
     const { data, error } = await supabase
       .from('meals')
-      .insert([{ user_id: userId, name, calories, protein, carbs, fat, date: todayStr() }])
+      .insert([{ user_id: userId, name, calories, protein, carbs, fat }])
       .select()
       .single()
 

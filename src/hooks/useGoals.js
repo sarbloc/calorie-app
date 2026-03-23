@@ -21,7 +21,7 @@ export function useGoals(userId) {
       .from('goals')
       .select('*')
       .eq('user_id', userId)
-      .eq('date', todayStr())
+      .eq('target_date', todayStr())
       .maybeSingle()
 
     if (error) {
@@ -32,10 +32,10 @@ export function useGoals(userId) {
 
     if (data) {
       setGoals({
-        calorie_goal: data.calorie_goal ?? 2000,
-        protein_goal: data.protein_goal ?? 150,
-        carbs_goal: data.carbs_goal ?? 250,
-        fat_goal: data.fat_goal ?? 65,
+        calorie_goal: data.target_calories ?? 2000,
+        protein_goal: data.target_protein ?? 150,
+        carbs_goal: data.target_carbs ?? 250,
+        fat_goal: data.target_fats ?? 65,
       })
     }
     setLoading(false)
@@ -50,16 +50,23 @@ export function useGoals(userId) {
 
     const { data, error } = await supabase
       .from('goals')
-      .upsert([{ user_id: userId, date: todayStr(), ...newGoals }], { onConflict: 'user_id,date' })
+      .upsert([{
+        user_id: userId,
+        target_date: todayStr(),
+        target_calories: newGoals.calorie_goal,
+        target_protein: newGoals.protein_goal,
+        target_carbs: newGoals.carbs_goal,
+        target_fats: newGoals.fat_goal,
+      }], { onConflict: 'user_id,target_date' })
       .select()
       .single()
 
     if (!error && data) {
       setGoals({
-        calorie_goal: data.calorie_goal ?? 2000,
-        protein_goal: data.protein_goal ?? 150,
-        carbs_goal: data.carbs_goal ?? 250,
-        fat_goal: data.fat_goal ?? 65,
+        calorie_goal: data.target_calories ?? 2000,
+        protein_goal: data.target_protein ?? 150,
+        carbs_goal: data.target_carbs ?? 250,
+        fat_goal: data.target_fats ?? 65,
       })
     }
 
