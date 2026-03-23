@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { AlertTriangle, Salad, Loader2 } from 'lucide-react'
 
 export default function LoginView() {
   const { signInWithGoogle, isConfigured } = useAuth()
@@ -16,9 +17,9 @@ export default function LoginView() {
       <div className="view">
         <div className="card">
           <div className="empty-state">
-            <div className="empty-state-icon">⚠️</div>
-            <h3 style={{ marginBottom: '8px' }}>Supabase Not Configured</h3>
-            <p style={{ fontSize: '13px' }}>
+            <AlertTriangle size={48} color="#F59E0B" style={{ marginBottom: 12 }} />
+            <h3 style={{ marginBottom: 8 }}>Supabase Not Configured</h3>
+            <p style={{ fontSize: 13 }}>
               Set <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> in your <code>.env</code> file to enable authentication.
             </p>
           </div>
@@ -29,10 +30,10 @@ export default function LoginView() {
 
   return (
     <div className="view">
-      <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-        <div style={{ fontSize: '48px', marginBottom: '8px' }}>🥗</div>
-        <h1 style={{ fontSize: '24px', fontWeight: '700' }}>Calorie Tracker</h1>
-        <p className="text-muted" style={{ fontSize: '14px', marginTop: '4px' }}>
+      <div style={{ textAlign: 'center', marginBottom: 24 }}>
+        <Salad size={48} color="#22C55E" style={{ marginBottom: 8 }} />
+        <h1 style={{ fontSize: 24, fontWeight: '700' }}>Calorie Tracker</h1>
+        <p className="text-muted" style={{ fontSize: 14, marginTop: 4 }}>
           Sign in to continue
         </p>
       </div>
@@ -44,7 +45,10 @@ export default function LoginView() {
           disabled={loading}
         >
           {loading ? (
-            <span className="google-loading">Redirecting…</span>
+            <span className="google-loading">
+              <Loader2 size={16} style={{ verticalAlign: 'middle', marginRight: 8, animation: 'spin 1s linear infinite' }} />
+              Redirecting…
+            </span>
           ) : (
             <>
               <svg className="google-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
