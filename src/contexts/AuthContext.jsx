@@ -48,17 +48,67 @@ export function AuthProvider({ children }) {
     return { data, error }
   }
 
-  const signInWithGoogle = async () => {
+  /**
+   * Sign in with Telegram Mini-App
+   * Uses window.Telegram.WebApp.initData which is only available inside Telegram
+   */
+  const signInWithTelegram = async () => {
     if (!isSupabaseConfigured) return { error: 'Supabase not configured' }
     setAuthError('')
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: window.location.href,
-      },
-    })
-    if (error) setAuthError(error.message)
-    return { error }
+
+    // Check if we're inside Telegram
+    const tg = window.Telegram?.WebApp
+    if (!tg) {
+      setAuthError('Telegram WebApp not available. Please open this app from Telegram.')
+      return { error: 'Telegram WebApp not available' }
+    }
+
+    const initData = tg.initData
+    if (!initData) {
+      setAuthError('No initData available from Telegram')
+      return { error: 'No initData' }
+    }
+
+    try {
+      // Call our Supabase Edge Function to validate initData and get JWT
+      const edgeFunctionUrl = import.meta.env.VITE_SUPABASE_EDGE_FUNCTION_URL
+      if (!edgeFunctionUrl) {
+        setAuthError('Edge function URL not configured')
+        return { error: 'Edge function URL not configured' }
+      }
+
+      const response = await fetch(`${edgeFunctionUrl}/telegram-auth`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ initData }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        setAuthError(result.error || 'Authentication failed')
+        return { error: result.error }
+      }
+
+      // Set the Supabase session with the returned JWT
+      const { data, error } = await supabase.auth.setSession({
+        access_token: result.jwt,
+        refresh_token: result.jwt, // For simplicity, using same token; in prod use proper refresh token
+      })
+
+      if (error) {
+        setAuthError(error.message)
+        return { error }
+      }
+
+      return { data, user: result.user }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Network error'
+      setAuthError(msg)
+      return { error: msg }
+    }
   }
 
   const signOut = async () => {
@@ -67,7 +117,17 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signInWithGoogle, signOut, authError, isConfigured: isSupabaseConfigured }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      session, 
+      loading, 
+      signIn, 
+      signUp, 
+      signInWithTelegram, 
+      signOut, 
+      authError, 
+      isConfigured: isSupabaseConfigured 
+    }}>
       {children}
     </AuthContext.Provider>
   )
