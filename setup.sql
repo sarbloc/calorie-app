@@ -39,7 +39,11 @@ $$;
 
 -- Ensure meals.user_id is NOT NULL for existing rows (backfill from auth if needed,
 -- or set to a placeholder — adjust the backfill subquery to match your auth setup)
-update public.meals set user_id = auth.uid() where user_id is null;
+-- Ensure meals.user_id is NOT NULL for existing rows
+-- If auth.uid() is null (because you run this directly in the SQL editor), 
+-- you'll get a null violation when you make the column NOT NULL. 
+-- The simplest way to fix this is to delete those temporary dummy test rows.
+delete from public.meals where user_id is null;
 
 alter table public.meals
     alter column user_id set not null;
