@@ -77,13 +77,20 @@ export function AuthProvider({ children }) {
         return { error: 'Edge function URL not configured' }
       }
 
-      const response = await fetch(`${edgeFunctionUrl}/telegram-auth`, {
+      // VITE_SUPABASE_EDGE_FUNCTION_URL already includes the function path
+      // (e.g. https://xxx.supabase.co/functions/v1/telegram-auth) — do not append again
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 10000)
+
+      const response = await fetch(edgeFunctionUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ initData }),
+        signal: controller.signal,
       })
+      clearTimeout(timeout)
 
       const result = await response.json()
 
@@ -105,6 +112,10 @@ export function AuthProvider({ children }) {
 
       return { data, user: result.user }
     } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        setAuthError('Request timed out. Please try again.')
+        return { error: 'Request timed out' }
+      }
       const msg = err instanceof Error ? err.message : 'Network error'
       setAuthError(msg)
       return { error: msg }
