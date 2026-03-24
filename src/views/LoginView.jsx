@@ -123,8 +123,7 @@ export default function LoginView() {
             borderRadius: 4,
             fontSize: 11
           }}>
-            window.Telegram = {{ WebApp: {{ initData: 'test' }} }}
-          </code>
+{"window.Telegram = { WebApp: { initData: 'test' } }"}</code>
         </div>
       </div>
     </div>
