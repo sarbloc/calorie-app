@@ -70,32 +70,19 @@ export function AuthProvider({ children }) {
     }
 
     try {
-      // Call our Supabase Edge Function to validate initData and get JWT
-      const baseUrl = import.meta.env.VITE_SUPABASE_EDGE_FUNCTION_URL
-        || (import.meta.env.VITE_SUPABASE_URL ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/telegram-auth` : '')
-      if (!baseUrl) {
-        setAuthError('Supabase URL not configured')
-        return { error: 'Supabase URL not configured' }
+      // Call our Supabase Edge Function to validate initData and get a session
+      const { data: result, error: fnError } = await supabase.functions.invoke(
+        'telegram-auth',
+        { body: { initData } }
+      )
+
+      if (fnError) {
+        setAuthError(fnError.message || 'Authentication failed')
+        return { error: fnError.message }
       }
-      const edgeFunctionUrl = baseUrl
-      const controller = new AbortController()
-      const timeout = setTimeout(() => controller.abort(), 10000)
 
-      const response = await fetch(edgeFunctionUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({ initData }),
-        signal: controller.signal,
-      })
-      clearTimeout(timeout)
-
-      const result = await response.json()
-
-      if (!response.ok) {
-        setAuthError(result.error || 'Authentication failed')
+      if (result?.error) {
+        setAuthError(result.error)
         return { error: result.error }
       }
 
@@ -112,10 +99,6 @@ export function AuthProvider({ children }) {
 
       return { data, user: result.user }
     } catch (err) {
-      if (err instanceof Error && err.name === 'AbortError') {
-        setAuthError('Request timed out. Please try again.')
-        return { error: 'Request timed out' }
-      }
       const msg = err instanceof Error ? err.message : 'Network error'
       setAuthError(msg)
       return { error: msg }
