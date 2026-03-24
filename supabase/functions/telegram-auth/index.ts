@@ -115,31 +115,17 @@ Deno.serve(async (req) => {
     // Deterministic email for this Telegram user
     const email = `tg_${telegramId}@telegram.users.noreply`
 
-    // Derive a deterministic password from telegram_id + bot_token
-    const pwKey = await crypto.subtle.importKey(
-      'raw',
-      encoder.encode(BOT_TOKEN + '_password'),
-      { name: 'HMAC', hash: 'SHA-256' },
-      false,
-      ['sign']
-    )
-    const pwBytes = await crypto.subtle.sign('HMAC', pwKey, encoder.encode(telegramId))
-    const password = Array.from(new Uint8Array(pwBytes))
-      .map((b) => b.toString(16).padStart(2, '0'))
-      .join('')
+    // Ensure GoTrue user exists
+    const { data: { users } } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1 })
+    let authUser = null
 
-    // Try to sign in first (user may already exist)
-    let session = null
-    const { data: signInData, error: signInError } = await supabaseAdmin.auth.signInWithPassword({
-      email,
-      password,
-    })
+    // Look up by email via admin API
+    const { data: lookupData } = await supabaseAdmin.auth.admin.listUsers()
+    authUser = lookupData.users.find((u) => u.email === email) || null
 
-    if (signInError) {
-      // User doesn't exist yet — create via admin API
+    if (!authUser) {
       const { data: createData, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email,
-        password,
         email_confirm: true,
         user_metadata: {
           telegram_id: telegramId,
@@ -151,52 +137,37 @@ Deno.serve(async (req) => {
 
       if (createError) {
         console.error('Error creating auth user:', createError)
-        return jsonResponse({ error: 'Failed to create user' }, 500)
+        return jsonResponse({ error: `Failed to create user: ${createError.message}` }, 500)
       }
-
-      // Now sign in to get a real session
-      const { data: retrySignIn, error: retryError } = await supabaseAdmin.auth.signInWithPassword({
-        email,
-        password,
-      })
-
-      if (retryError) {
-        console.error('Error signing in after create:', retryError)
-        return jsonResponse({ error: 'Failed to sign in' }, 500)
-      }
-
-      session = retrySignIn.session
-
-      // Create profile linked to auth user
-      await supabaseAdmin.from('profiles').upsert({
-        id: createData.user.id,
-        telegram_id: telegramId,
-        telegram_username: user.username || null,
-        telegram_first_name: user.first_name || null,
-        telegram_last_name: user.last_name || null,
-      })
-    } else {
-      session = signInData.session
-
-      // Update profile info on each login
-      await supabaseAdmin.from('profiles').upsert({
-        id: signInData.user.id,
-        telegram_id: telegramId,
-        telegram_username: user.username || null,
-        telegram_first_name: user.first_name || null,
-        telegram_last_name: user.last_name || null,
-      })
+      authUser = createData.user
     }
 
-    if (!session) {
-      return jsonResponse({ error: 'Failed to create session' }, 500)
+    // Generate a magic link to get a valid OTP
+    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'magiclink',
+      email,
+    })
+
+    if (linkError) {
+      console.error('Error generating link:', linkError)
+      return jsonResponse({ error: `Failed to generate auth link: ${linkError.message}` }, 500)
     }
 
+    // Upsert profile linked to auth user
+    await supabaseAdmin.from('profiles').upsert({
+      id: authUser.id,
+      telegram_id: telegramId,
+      telegram_username: user.username || null,
+      telegram_first_name: user.first_name || null,
+      telegram_last_name: user.last_name || null,
+    })
+
+    // Return the OTP + email so the client can exchange it for a real session
     return jsonResponse({
-      access_token: session.access_token,
-      refresh_token: session.refresh_token,
+      email,
+      token_hash: linkData.properties.hashed_token,
       user: {
-        id: session.user.id,
+        id: authUser.id,
         telegram_id: telegramId,
         username: user.username,
         first_name: user.first_name,

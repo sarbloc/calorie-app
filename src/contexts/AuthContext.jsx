@@ -86,10 +86,11 @@ export function AuthProvider({ children }) {
         return { error: result.error }
       }
 
-      // Set the Supabase session with the real GoTrue tokens
-      const { data, error } = await supabase.auth.setSession({
-        access_token: result.access_token,
-        refresh_token: result.refresh_token,
+      // Exchange the OTP for a real session
+      const { data, error } = await supabase.auth.verifyOtp({
+        email: result.email,
+        token_hash: result.token_hash,
+        type: 'email',
       })
 
       if (error) {
