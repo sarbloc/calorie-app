@@ -2,11 +2,12 @@ import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from './contexts/AuthContext'
 import { useMeals } from './hooks/useMeals'
 import { useGoals } from './hooks/useGoals'
+import { useCalorieEstimate } from './hooks/useCalorieEstimate'
 import LoginView from './views/LoginView'
 import {
   LayoutDashboard, Plus, Calendar, Settings,
   PartyPopper, Target, Flame, Egg, Wheat, Droplets,
-  Camera, Edit3, Trash2, Check, X, Loader2
+  Camera, Edit3, Trash2, Check, X, Loader2, Sparkles
 } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 
@@ -224,6 +225,24 @@ function IntakeView({ userId, onAddEntry }) {
   const [submitting, setSubmitting]     = useState(false)
   const [submitted, setSubmitted]       = useState(false)
 
+  // AI estimation
+  const { estimate, loading: estimating, error: estimateError, estimateCalories, clearEstimate } = useCalorieEstimate()
+  const [scanName, setScanName]         = useState('')
+  const [scanCalories, setScanCalories] = useState('')
+  const [scanProtein, setScanProtein]   = useState('')
+  const [scanCarbs, setScanCarbs]       = useState('')
+  const [scanFat, setScanFat]           = useState('')
+
+  useEffect(() => {
+    if (estimate) {
+      setScanName(estimate.name || 'AI Photo Scan')
+      setScanCalories(String(estimate.calories || 0))
+      setScanProtein(String(estimate.protein || 0))
+      setScanCarbs(String(estimate.carbs || 0))
+      setScanFat(String(estimate.fat || 0))
+    }
+  }, [estimate])
+
   const handleImageUpload = (e) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -324,37 +343,87 @@ function IntakeView({ userId, onAddEntry }) {
             />
           </div>
 
-          <button
-            className="btn btn-primary"
-            style={{ width: '100%', marginTop: 16 }}
-            disabled={!imagePreview || submitting}
-            onClick={async () => {
-              setSubmitting(true)
-              await onAddEntry({
-                name: description || 'AI Photo Scan',
-                calories: 0,
-                protein: 0,
-                carbs: 0,
-                fat: 0,
-                image: imagePreview,
-                description,
-              })
-              setImagePreview(null)
-              setDescription('')
-              setSubmitted(true)
-              setSubmitting(false)
-              setTimeout(() => setSubmitted(false), 2000)
-            }}
-          >
-            {submitting ? (
-              <>
-                <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
-                Logging…
-              </>
-            ) : (
-              'Log Meal'
-            )}
-          </button>
+          {estimateError && (
+            <p style={{ color: '#EF4444', fontSize: 13, marginTop: 8 }}>{estimateError}</p>
+          )}
+
+          {!estimate ? (
+            <button
+              className="btn btn-primary"
+              style={{ width: '100%', marginTop: 16, gap: 8 }}
+              disabled={!imagePreview || estimating}
+              onClick={() => estimateCalories(imagePreview, description)}
+            >
+              {estimating ? (
+                <>
+                  <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                  Analyzing…
+                </>
+              ) : (
+                <>
+                  <Sparkles size={16} />
+                  Estimate Calories
+                </>
+              )}
+            </button>
+          ) : (
+            <div style={{ marginTop: 16 }}>
+              <div className="input-group">
+                <label className="input-label">Food Name</label>
+                <input type="text" className="input" value={scanName} onChange={(e) => setScanName(e.target.value)} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                <div className="input-group">
+                  <label className="input-label">Calories (kcal)</label>
+                  <input type="number" className="input" value={scanCalories} onChange={(e) => setScanCalories(e.target.value)} />
+                </div>
+                <div className="input-group">
+                  <label className="input-label">Protein (g)</label>
+                  <input type="number" className="input" value={scanProtein} onChange={(e) => setScanProtein(e.target.value)} />
+                </div>
+                <div className="input-group">
+                  <label className="input-label">Carbs (g)</label>
+                  <input type="number" className="input" value={scanCarbs} onChange={(e) => setScanCarbs(e.target.value)} />
+                </div>
+                <div className="input-group">
+                  <label className="input-label">Fat (g)</label>
+                  <input type="number" className="input" value={scanFat} onChange={(e) => setScanFat(e.target.value)} />
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => { clearEstimate(); setScanName(''); setScanCalories(''); setScanProtein(''); setScanCarbs(''); setScanFat('') }}
+                >
+                  Re-estimate
+                </button>
+                <button
+                  className="btn btn-primary"
+                  style={{ flex: 1 }}
+                  disabled={submitting}
+                  onClick={async () => {
+                    setSubmitting(true)
+                    await onAddEntry({
+                      name: scanName || 'AI Photo Scan',
+                      calories: parseInt(scanCalories) || 0,
+                      protein: parseInt(scanProtein) || 0,
+                      carbs: parseInt(scanCarbs) || 0,
+                      fat: parseInt(scanFat) || 0,
+                    })
+                    clearEstimate()
+                    setImagePreview(null)
+                    setDescription('')
+                    setScanName(''); setScanCalories(''); setScanProtein(''); setScanCarbs(''); setScanFat('')
+                    setSubmitted(true)
+                    setSubmitting(false)
+                    setTimeout(() => setSubmitted(false), 2000)
+                  }}
+                >
+                  {submitting ? 'Logging…' : 'Log Meal'}
+                </button>
+              </div>
+            </div>
+          )}
 
           {submitted && (
             <p style={{ color: '#22C55E', fontSize: 13, marginTop: 8, textAlign: 'center' }}>
