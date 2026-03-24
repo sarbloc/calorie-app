@@ -71,14 +71,13 @@ export function AuthProvider({ children }) {
 
     try {
       // Call our Supabase Edge Function to validate initData and get JWT
-      const edgeFunctionUrl = import.meta.env.VITE_SUPABASE_EDGE_FUNCTION_URL
-      if (!edgeFunctionUrl) {
-        setAuthError('Edge function URL not configured')
-        return { error: 'Edge function URL not configured' }
+      const baseUrl = import.meta.env.VITE_SUPABASE_EDGE_FUNCTION_URL
+        || (import.meta.env.VITE_SUPABASE_URL ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/telegram-auth` : '')
+      if (!baseUrl) {
+        setAuthError('Supabase URL not configured')
+        return { error: 'Supabase URL not configured' }
       }
-
-      // VITE_SUPABASE_EDGE_FUNCTION_URL already includes the function path
-      // (e.g. https://xxx.supabase.co/functions/v1/telegram-auth) — do not append again
+      const edgeFunctionUrl = baseUrl
       const controller = new AbortController()
       const timeout = setTimeout(() => controller.abort(), 10000)
 
