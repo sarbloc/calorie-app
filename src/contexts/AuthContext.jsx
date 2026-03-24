@@ -99,10 +99,10 @@ export function AuthProvider({ children }) {
         return { error: result.error }
       }
 
-      // Set the Supabase session with the returned JWT
+      // Set the Supabase session with the real GoTrue tokens
       const { data, error } = await supabase.auth.setSession({
-        access_token: result.jwt,
-        refresh_token: result.jwt, // For simplicity, using same token; in prod use proper refresh token
+        access_token: result.access_token,
+        refresh_token: result.refresh_token,
       })
 
       if (error) {
