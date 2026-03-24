@@ -294,7 +294,6 @@ function IntakeView({ userId, onAddEntry }) {
             <input
               type="file"
               accept="image/*"
-              capture="environment"
               onChange={handleImageUpload}
               className="input"
             />
