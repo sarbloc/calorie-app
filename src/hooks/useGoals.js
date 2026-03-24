@@ -21,7 +21,8 @@ export function useGoals(userId) {
       .from('goals')
       .select('*')
       .eq('user_id', userId)
-      .eq('target_date', todayStr())
+      .order('target_date', { ascending: false })
+      .limit(1)
       .maybeSingle()
 
     if (error) {
