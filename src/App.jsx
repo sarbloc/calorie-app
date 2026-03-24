@@ -324,9 +324,43 @@ function IntakeView({ userId, onAddEntry }) {
             />
           </div>
 
-          <p className="text-muted" style={{ fontSize: 12, marginTop: 8 }}>
-            Photo + description will be sent for AI analysis.
-          </p>
+          <button
+            className="btn btn-primary"
+            style={{ width: '100%', marginTop: 16 }}
+            disabled={!imagePreview || submitting}
+            onClick={async () => {
+              setSubmitting(true)
+              await onAddEntry({
+                name: description || 'AI Photo Scan',
+                calories: 0,
+                protein: 0,
+                carbs: 0,
+                fat: 0,
+                image: imagePreview,
+                description,
+              })
+              setImagePreview(null)
+              setDescription('')
+              setSubmitted(true)
+              setSubmitting(false)
+              setTimeout(() => setSubmitted(false), 2000)
+            }}
+          >
+            {submitting ? (
+              <>
+                <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                Logging…
+              </>
+            ) : (
+              'Log Meal'
+            )}
+          </button>
+
+          {submitted && (
+            <p style={{ color: '#22C55E', fontSize: 13, marginTop: 8, textAlign: 'center' }}>
+              Meal logged!
+            </p>
+          )}
         </div>
       ) : (
         /* ── Manual Entry Mode ── */
