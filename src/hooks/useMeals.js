@@ -43,7 +43,7 @@ export function useMeals(userId) {
       total_calories: rows.reduce((s, r) => s + (r.calories || 0), 0),
       total_protein: rows.reduce((s, r) => s + (r.protein || 0), 0),
       total_carbs: rows.reduce((s, r) => s + (r.carbs || 0), 0),
-      total_fat: rows.reduce((s, r) => s + (r.fat || 0), 0),
+      total_fat: rows.reduce((s, r) => s + (r.fats || 0), 0),
     })
     setLoading(false)
   }, [userId])
@@ -57,7 +57,7 @@ export function useMeals(userId) {
 
     const { data, error } = await supabase
       .from('meals')
-      .insert([{ user_id: userId, name, calories, protein, carbs, fat }])
+      .insert([{ user_id: userId, name, calories, protein, carbs, fats: fat }])
       .select()
       .single()
 
@@ -86,7 +86,7 @@ export function useMeals(userId) {
         total_calories: Math.max(0, prev.total_calories - (entry.calories || 0)),
         total_protein: Math.max(0, prev.total_protein - (entry.protein || 0)),
         total_carbs: Math.max(0, prev.total_carbs - (entry.carbs || 0)),
-        total_fat: Math.max(0, prev.total_fat - (entry.fat || 0)),
+        total_fat: Math.max(0, prev.total_fat - (entry.fats || 0)),
       }))
     }
 

@@ -163,7 +163,7 @@ function DashboardView({ user, meals, goals }) {
             <div key={entry.id} className="food-entry">
               <div className="food-info">
                 <h4>{entry.name}</h4>
-                <p>{entry.protein || 0}g P · {entry.carbs || 0}g C · {entry.fat || 0}g F</p>
+                <p>{entry.protein || 0}g P · {entry.carbs || 0}g C · {entry.fats || 0}g F</p>
               </div>
               <span className="food-calories">{entry.calories || 0} kcal</span>
             </div>
