@@ -6,7 +6,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const EDGE_SERVICE_ROLE_KEY = Deno.env.get('EDGE_SERVICE_ROLE_KEY')
-const SUPABASE_JWT_SECRET = Deno.env.get('SUPABASE_JWT_SECRET')
+const JWT_SECRET = Deno.env.get('APP_JWT_SECRET')
 
 // CORS headers for browser requests
 const corsHeaders = {
@@ -201,7 +201,7 @@ Deno.serve(async (req) => {
 
     const signingInput = `${encodeBase64Json(header)}.${encodeBase64Json(payload)}`
 
-    const jwtSecret = SUPABASE_JWT_SECRET || EDGE_SERVICE_ROLE_KEY
+    const jwtSecret = JWT_SECRET || EDGE_SERVICE_ROLE_KEY
     const signingKey = await crypto.subtle.importKey(
       'raw',
       encoder.encode(jwtSecret),
