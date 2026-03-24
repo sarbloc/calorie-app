@@ -39,41 +39,43 @@ function MacroDonutChart({ totals, goals }) {
   ]
 
   return (
-    <div style={{ position: 'relative' }}>
-      <ResponsiveContainer width="100%" height={180}>
-        <PieChart>
-          <Pie
-            data={data}
-            cx="50%"
-            cy="50%"
-            innerRadius={55}
-            outerRadius={75}
-            paddingAngle={3}
-            dataKey="value"
-            stroke="none"
-          >
-            {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={entry.color} />
-            ))}
-          </Pie>
-          <Tooltip
-            contentStyle={{
-              background: '#1A1A1A',
-              border: '1px solid #333',
-              borderRadius: 8,
-              fontSize: 13,
-              color: '#fff',
-            }}
-            formatter={(value, name) => [`${value}g`, name]}
-          />
-        </PieChart>
-      </ResponsiveContainer>
-      <div style={{
-        position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-        textAlign: 'center', pointerEvents: 'none',
-      }}>
-        <div style={{ fontSize: 20, fontWeight: 700, color: '#F43F5E' }}>{total}g</div>
-        <div style={{ fontSize: 10, color: '#666', textTransform: 'uppercase' }}>Total</div>
+    <div>
+      <div style={{ position: 'relative', height: 180 }}>
+        <ResponsiveContainer width="100%" height={180}>
+          <PieChart>
+            <Pie
+              data={data}
+              cx="50%"
+              cy="50%"
+              innerRadius={55}
+              outerRadius={75}
+              paddingAngle={3}
+              dataKey="value"
+              stroke="none"
+            >
+              {data.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.color} />
+              ))}
+            </Pie>
+            <Tooltip
+              contentStyle={{
+                background: '#1A1A1A',
+                border: '1px solid #333',
+                borderRadius: 8,
+                fontSize: 13,
+                color: '#fff',
+              }}
+              formatter={(value, name) => [`${value}g`, name]}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+        <div style={{
+          position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+          textAlign: 'center', pointerEvents: 'none',
+        }}>
+          <div style={{ fontSize: 20, fontWeight: 700, color: '#F43F5E' }}>{total}g</div>
+          <div style={{ fontSize: 10, color: '#666', textTransform: 'uppercase' }}>Total</div>
+        </div>
       </div>
       <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginTop: 8 }}>
         {data.map(({ name, value, color }) => (
