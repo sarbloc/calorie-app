@@ -5,7 +5,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+const EDGE_SERVICE_ROLE_KEY = Deno.env.get('EDGE_SERVICE_ROLE_KEY')
 
 // CORS headers for browser requests
 const corsHeaders = {
@@ -105,7 +105,7 @@ Deno.serve(async (req) => {
     }
 
     // Create Supabase service client to mint custom JWT
-    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+    const supabaseAdmin = createClient(SUPABASE_URL, EDGE_SERVICE_ROLE_KEY)
 
     // Find or create user by telegram_id
     let { data: existingUser, error: findError } = await supabaseAdmin
@@ -179,7 +179,7 @@ Deno.serve(async (req) => {
     
     const signingKey = await crypto.subtle.importKey(
       'raw',
-      encoder.encode(SUPABASE_SERVICE_ROLE_KEY),
+      encoder.encode(EDGE_SERVICE_ROLE_KEY),
       { name: 'HMAC', hash: 'SHA-256' },
       false,
       ['sign']
