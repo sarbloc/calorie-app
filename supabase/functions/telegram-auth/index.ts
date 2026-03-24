@@ -57,16 +57,30 @@ Deno.serve(async (req) => {
       .map((key) => `${key}=${params.get(key)}`)
       .join('\n')
 
-    // Compute HMAC-SHA256
+    // Compute HMAC-SHA256 per Telegram spec:
+    // 1. Derive secret_key = HMAC_SHA256("WebAppData", BOT_TOKEN)
+    // 2. Compute hash = HMAC_SHA256(secret_key, data_check_string)
     const encoder = new TextEncoder()
-    const key = await crypto.subtle.importKey(
+    const webAppDataKey = await crypto.subtle.importKey(
       'raw',
-      encoder.encode(BOT_TOKEN),
+      encoder.encode('WebAppData'),
       { name: 'HMAC', hash: 'SHA-256' },
       false,
       ['sign']
     )
-    
+    const secretKeyBytes = await crypto.subtle.sign(
+      'HMAC',
+      webAppDataKey,
+      encoder.encode(BOT_TOKEN)
+    )
+    const key = await crypto.subtle.importKey(
+      'raw',
+      secretKeyBytes,
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    )
+
     const signature = await crypto.subtle.sign(
       'HMAC',
       key,
@@ -171,12 +185,20 @@ Deno.serve(async (req) => {
     // Create the JWT manually since we're in Edge Function
     const header = { alg: 'HS256', typ: 'JWT' }
     
-    const encodeBase64 = (obj: unknown) => {
+    const encodeBase64Json = (obj: unknown) => {
       return btoa(JSON.stringify(obj)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_')
     }
 
-    const signingInput = `${encodeBase64(header)}.${encodeBase64(payload)}`
-    
+    const encodeBase64Bytes = (bytes: Uint8Array) => {
+      let binary = ''
+      for (const byte of bytes) {
+        binary += String.fromCharCode(byte)
+      }
+      return btoa(binary).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_')
+    }
+
+    const signingInput = `${encodeBase64Json(header)}.${encodeBase64Json(payload)}`
+
     const signingKey = await crypto.subtle.importKey(
       'raw',
       encoder.encode(EDGE_SERVICE_ROLE_KEY),
@@ -184,10 +206,10 @@ Deno.serve(async (req) => {
       false,
       ['sign']
     )
-    
+
     const signatureBytes = await crypto.subtle.sign('HMAC', signingKey, encoder.encode(signingInput))
-    const signatureBase64 = encodeBase64(new Uint8Array(signatureBytes))
-    
+    const signatureBase64 = encodeBase64Bytes(new Uint8Array(signatureBytes))
+
     const jwt = `${signingInput}.${signatureBase64}`
 
     return new Response(

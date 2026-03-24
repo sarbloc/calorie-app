@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { AlertTriangle, Salad, Loader2 } from 'lucide-react'
 
 export default function LoginView() {
-  const { signInWithTelegram, isConfigured } = useAuth()
+  const { signInWithTelegram, isConfigured, authError } = useAuth()
   const [loading, setLoading] = useState(false)
   const [isTelegram, setIsTelegram] = useState(false)
 
@@ -14,8 +14,10 @@ export default function LoginView() {
 
   const handleTelegramSignIn = async () => {
     setLoading(true)
-    await signInWithTelegram()
-    // loading stays true until auth completes or fails
+    const result = await signInWithTelegram()
+    if (result?.error) {
+      setLoading(false)
+    }
   }
 
   if (!isConfigured) {
@@ -82,6 +84,12 @@ export default function LoginView() {
               </>
             )}
           </button>
+
+          {authError && (
+            <p style={{ color: '#EF4444', fontSize: 13, marginTop: 12, textAlign: 'center' }}>
+              {authError}
+            </p>
+          )}
         </div>
       </div>
     )
