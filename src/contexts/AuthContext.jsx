@@ -88,9 +88,8 @@ export function AuthProvider({ children }) {
 
       // Exchange the OTP for a real session
       const { data, error } = await supabase.auth.verifyOtp({
-        email: result.email,
         token_hash: result.token_hash,
-        type: 'email',
+        type: 'magiclink',
       })
 
       if (error) {

@@ -115,30 +115,35 @@ Deno.serve(async (req) => {
     // Deterministic email for this Telegram user
     const email = `tg_${telegramId}@telegram.users.noreply`
 
-    // Ensure GoTrue user exists
-    const { data: { users } } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1 })
+    // Try to create GoTrue user — if already exists, that's fine
     let authUser = null
+    const { data: createData, error: createError } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      email_confirm: true,
+      user_metadata: {
+        telegram_id: telegramId,
+        username: user.username || null,
+        first_name: user.first_name || null,
+        last_name: user.last_name || null,
+      },
+    })
 
-    // Look up by email via admin API
-    const { data: lookupData } = await supabaseAdmin.auth.admin.listUsers()
-    authUser = lookupData.users.find((u) => u.email === email) || null
-
-    if (!authUser) {
-      const { data: createData, error: createError } = await supabaseAdmin.auth.admin.createUser({
-        email,
-        email_confirm: true,
-        user_metadata: {
-          telegram_id: telegramId,
-          username: user.username || null,
-          first_name: user.first_name || null,
-          last_name: user.last_name || null,
-        },
+    if (createError) {
+      // User already exists — look up by email via admin API
+      const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers({
+        page: 1,
+        perPage: 1000,
       })
-
-      if (createError) {
-        console.error('Error creating auth user:', createError)
+      if (listError) {
+        console.error('Error listing users:', listError)
+        return jsonResponse({ error: `User lookup failed: ${listError.message}` }, 500)
+      }
+      authUser = users.find((u) => u.email === email) || null
+      if (!authUser) {
+        console.error('User create failed and not found:', createError)
         return jsonResponse({ error: `Failed to create user: ${createError.message}` }, 500)
       }
+    } else {
       authUser = createData.user
     }
 
