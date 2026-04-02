@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 const EDGE_FUNCTION_URL = import.meta.env.VITE_SUPABASE_EDGE_FUNCTION_URL
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 export function useCalorieEstimate(accessToken) {
   const [estimate, setEstimate] = useState(null)
@@ -32,6 +33,7 @@ export function useCalorieEstimate(accessToken) {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${accessToken}`,
+          'apikey': SUPABASE_ANON_KEY,
         },
         body: JSON.stringify({
           message: prompt,
