@@ -215,6 +215,7 @@ function HistoryView({ userId }) {
 }
 
 function IntakeView({ userId, onAddEntry }) {
+  const { session } = useAuth()
   const [mode, setMode] = useState('scan') // 'scan' | 'manual'
   const [name, setName]     = useState('')
   const [calories, setCalories] = useState('')
@@ -228,7 +229,7 @@ function IntakeView({ userId, onAddEntry }) {
   const [submitted, setSubmitted]       = useState(false)
 
   // AI estimation
-  const { estimate, loading: estimating, error: estimateError, estimateCalories, clearEstimate } = useCalorieEstimate()
+  const { estimate, loading: estimating, error: estimateError, estimateCalories, clearEstimate } = useCalorieEstimate(session?.access_token)
   const [scanName, setScanName]         = useState('')
   const [scanCalories, setScanCalories] = useState('')
   const [scanProtein, setScanProtein]   = useState('')
