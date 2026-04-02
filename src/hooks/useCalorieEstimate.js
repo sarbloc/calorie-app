@@ -1,16 +1,14 @@
 import { useState } from 'react'
+import { supabase } from '../lib/supabase'
 
-const EDGE_FUNCTION_URL = import.meta.env.VITE_SUPABASE_EDGE_FUNCTION_URL
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
-
-export function useCalorieEstimate(accessToken) {
+export function useCalorieEstimate() {
   const [estimate, setEstimate] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
   const estimateCalories = async (base64Image, description) => {
-    if (!EDGE_FUNCTION_URL) {
-      setError('Edge function URL not configured')
+    if (!supabase) {
+      setError('Supabase not configured')
       return
     }
 
@@ -28,25 +26,14 @@ export function useCalorieEstimate(accessToken) {
         'Values: calories in kcal, protein/carbs/fat in grams. Use integers.',
       ].filter(Boolean).join('\n')
 
-      const res = await fetch(`${EDGE_FUNCTION_URL}/estimate-calories`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-          'apikey': SUPABASE_ANON_KEY,
-        },
-        body: JSON.stringify({
-          message: prompt,
-          image: base64Image,
-        }),
+      const { data, error: fnError } = await supabase.functions.invoke('estimate-calories', {
+        body: { message: prompt, image: base64Image },
       })
 
-      if (!res.ok) {
-        const text = await res.text()
-        throw new Error(text || `Request failed with ${res.status}`)
+      if (fnError) {
+        throw new Error(fnError.message || 'Estimation request failed')
       }
 
-      const data = await res.json()
       const responseText = typeof data === 'string' ? data
         : data.reply || data.message || data.text || data.content || JSON.stringify(data)
 
