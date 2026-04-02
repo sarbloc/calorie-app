@@ -1,12 +1,13 @@
 // Supabase Edge Function: Estimate Calories
-// Proxies image + description to OpenClaw webhook, keeping the token server-side
+// Calls NVIDIA's Kimi K2.5 API directly for vision-based calorie estimation
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const OPENCLAW_HOOKS_URL = Deno.env.get('OPENCLAW_HOOKS_URL')
-const OPENCLAW_HOOKS_TOKEN = Deno.env.get('OPENCLAW_HOOKS_TOKEN')
+const NVIDIA_API_KEY = Deno.env.get('NVIDIA_API_KEY')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')
+
+const NVIDIA_URL = 'https://integrate.api.nvidia.com/v1/chat/completions'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -26,8 +27,8 @@ Deno.serve(async (req) => {
   }
 
   try {
-    if (!OPENCLAW_HOOKS_URL || !OPENCLAW_HOOKS_TOKEN) {
-      console.error('OPENCLAW_HOOKS_URL or OPENCLAW_HOOKS_TOKEN is not set')
+    if (!NVIDIA_API_KEY) {
+      console.error('NVIDIA_API_KEY is not set')
       return jsonResponse({ error: 'Server configuration error' }, 500)
     }
 
@@ -54,25 +55,42 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'image is required' }, 400)
     }
 
-    const res = await fetch(`${OPENCLAW_HOOKS_URL}/estimate-calories`, {
+    const res = await fetch(NVIDIA_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENCLAW_HOOKS_TOKEN}`,
+        'Authorization': `Bearer ${NVIDIA_API_KEY}`,
+        'Accept': 'application/json',
       },
-      body: JSON.stringify({ image, message }),
+      body: JSON.stringify({
+        model: 'moonshotai/kimi-k2.5',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: message },
+              { type: 'image_url', image_url: { url: image } },
+            ],
+          },
+        ],
+        max_tokens: 1024,
+        temperature: 0.3,
+        top_p: 1.0,
+        stream: false,
+      }),
     })
 
     if (!res.ok) {
       const text = await res.text()
-      console.error(`OpenClaw returned ${res.status}: ${text}`)
-      return jsonResponse({ error: `Estimation failed: ${res.status}` }, 502)
+      console.error(`NVIDIA API returned ${res.status}: ${text}`)
+      return jsonResponse({ error: `Estimation failed: ${res.status}`, detail: text }, 502)
     }
 
     const data = await res.json()
-    return jsonResponse(data)
+    const reply = data.choices?.[0]?.message?.content || ''
+    return jsonResponse({ reply })
   } catch (error) {
     console.error('Estimate calories error:', error)
-    return jsonResponse({ error: 'Internal server error' }, 500)
+    return jsonResponse({ error: 'Internal server error', detail: String(error) }, 500)
   }
 })
