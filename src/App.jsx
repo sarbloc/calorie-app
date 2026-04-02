@@ -216,7 +216,7 @@ function HistoryView({ userId }) {
 
 function IntakeView({ userId, onAddEntry }) {
   const { session } = useAuth()
-  const [mode, setMode] = useState('manual') // 'scan' | 'manual'
+  const [mode, setMode] = useState('scan') // 'scan' | 'manual'
   const [name, setName]     = useState('')
   const [calories, setCalories] = useState('')
   const [protein, setProtein]   = useState('')
