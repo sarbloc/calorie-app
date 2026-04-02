@@ -49,9 +49,11 @@ function MacroDonutChart({ totals, goals }) {
               cx="50%"
               cy="50%"
               outerRadius={75}
-              paddingAngle={3}
+              paddingAngle={0}
               dataKey="value"
               stroke="none"
+              startAngle={90}
+              endAngle={-270}
             >
               {data.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.color} />
