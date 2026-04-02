@@ -1,7 +1,6 @@
 import { useState } from 'react'
 
-const HOOKS_URL = import.meta.env.VITE_OPENCLAW_HOOKS_URL
-const HOOKS_TOKEN = import.meta.env.VITE_OPENCLAW_HOOKS_TOKEN
+const EDGE_FUNCTION_URL = import.meta.env.VITE_SUPABASE_EDGE_FUNCTION_URL
 
 export function useCalorieEstimate() {
   const [estimate, setEstimate] = useState(null)
@@ -9,8 +8,8 @@ export function useCalorieEstimate() {
   const [error, setError] = useState(null)
 
   const estimateCalories = async (base64Image, description) => {
-    if (!HOOKS_URL || !HOOKS_TOKEN) {
-      setError('OpenClaw webhook not configured')
+    if (!EDGE_FUNCTION_URL) {
+      setError('Edge function URL not configured')
       return
     }
 
@@ -28,11 +27,10 @@ export function useCalorieEstimate() {
         'Values: calories in kcal, protein/carbs/fat in grams. Use integers.',
       ].filter(Boolean).join('\n')
 
-      const res = await fetch(`${HOOKS_URL}/estimate-calories`, {
+      const res = await fetch(`${EDGE_FUNCTION_URL}/estimate-calories`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${HOOKS_TOKEN}`,
         },
         body: JSON.stringify({
           message: prompt,
@@ -42,7 +40,7 @@ export function useCalorieEstimate() {
 
       if (!res.ok) {
         const text = await res.text()
-        throw new Error(text || `Webhook returned ${res.status}`)
+        throw new Error(text || `Request failed with ${res.status}`)
       }
 
       const data = await res.json()
