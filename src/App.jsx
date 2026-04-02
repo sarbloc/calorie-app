@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from './contexts/AuthContext'
+import { supabase, isSupabaseConfigured } from './lib/supabase'
 import { useMeals } from './hooks/useMeals'
 import { useGoals } from './hooks/useGoals'
 import { useCalorieEstimate } from './hooks/useCalorieEstimate'
@@ -40,14 +41,13 @@ function MacroDonutChart({ totals, goals }) {
 
   return (
     <div>
-      <div style={{ position: 'relative', height: 180 }}>
+      <div style={{ height: 180 }}>
         <ResponsiveContainer width="100%" height={180}>
           <PieChart>
             <Pie
               data={data}
               cx="50%"
               cy="50%"
-              innerRadius={55}
               outerRadius={75}
               paddingAngle={3}
               dataKey="value"
@@ -69,13 +69,6 @@ function MacroDonutChart({ totals, goals }) {
             />
           </PieChart>
         </ResponsiveContainer>
-        <div style={{
-          position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-          textAlign: 'center', pointerEvents: 'none',
-        }}>
-          <div style={{ fontSize: 20, fontWeight: 700, color: '#F43F5E' }}>{total}g</div>
-          <div style={{ fontSize: 10, color: '#666', textTransform: 'uppercase' }}>Total</div>
-        </div>
       </div>
       <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginTop: 8 }}>
         {data.map(({ name, value, color }) => (
@@ -181,7 +174,48 @@ function DashboardView({ user, meals, goals }) {
 }
 
 function HistoryView({ userId }) {
-  const [history, setHistory] = useState([])
+  const PAGE_SIZE = 20
+  const [entries, setEntries] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(true)
+
+  const fetchPage = useCallback(async (offset = 0) => {
+    if (!isSupabaseConfigured || !userId) return
+    const { data } = await supabase
+      .from('meals')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + PAGE_SIZE - 1)
+
+    const rows = data || []
+    if (offset === 0) setEntries(rows)
+    else setEntries(prev => [...prev, ...rows])
+    setHasMore(rows.length === PAGE_SIZE)
+  }, [userId])
+
+  useEffect(() => {
+    setLoading(true)
+    fetchPage(0).then(() => setLoading(false))
+  }, [fetchPage])
+
+  const loadMore = async () => {
+    setLoadingMore(true)
+    await fetchPage(entries.length)
+    setLoadingMore(false)
+  }
+
+  // Group entries by date
+  const grouped = entries.reduce((acc, entry) => {
+    const date = new Date(entry.created_at).toLocaleDateString('en-GB', {
+      weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
+    })
+    if (!acc[date]) acc[date] = { entries: [], totalCals: 0 }
+    acc[date].entries.push(entry)
+    acc[date].totalCals += entry.calories || 0
+    return acc
+  }, {})
 
   return (
     <div className="view">
@@ -189,26 +223,62 @@ function HistoryView({ userId }) {
         <Calendar size={24} color="#22C55E" />
         History
       </h1>
-      {history.length > 0 ? (
-        history.map((day, idx) => (
-          <div key={idx} className="card">
-            <div className="card-header">
-              <span className="card-title">
-                <Calendar size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} />
-                {day.date}
-              </span>
-              <span className="text-accent">{day.total_calories} kcal</span>
-            </div>
-            <p className="text-muted">{day.entries?.length || 0} entries</p>
+
+      {loading ? (
+        <div className="card">
+          <div className="empty-state">
+            <Loader2 size={32} color="#666" style={{ animation: 'spin 1s linear infinite' }} />
           </div>
-        ))
-      ) : (
+        </div>
+      ) : entries.length === 0 ? (
         <div className="card">
           <div className="empty-state">
             <Calendar size={48} color="#666" style={{ marginBottom: 12, opacity: 0.5 }} />
             <p>No history yet. Start logging meals!</p>
           </div>
         </div>
+      ) : (
+        <>
+          {Object.entries(grouped).map(([date, { entries: dayEntries, totalCals }]) => (
+            <div key={date} className="card" style={{ marginBottom: 12 }}>
+              <div className="card-header">
+                <span className="card-title" style={{ fontSize: 13 }}>
+                  <Calendar size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} />
+                  {date}
+                </span>
+                <span className="text-accent">{totalCals} kcal</span>
+              </div>
+              {dayEntries.map((entry) => (
+                <div key={entry.id} style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '8px 0', borderTop: '1px solid rgba(255,255,255,0.06)',
+                }}>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 500 }}>{entry.description}</div>
+                    <div className="text-muted" style={{ fontSize: 11 }}>
+                      {entry.meal_type?.toLowerCase()} · {entry.protein || 0}g P · {entry.carbs || 0}g C · {entry.fats || 0}g F
+                    </div>
+                  </div>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#22C55E' }}>{entry.calories} kcal</span>
+                </div>
+              ))}
+            </div>
+          ))}
+          {hasMore && (
+            <button
+              className="btn btn-secondary"
+              style={{ width: '100%', gap: 6 }}
+              onClick={loadMore}
+              disabled={loadingMore}
+            >
+              {loadingMore ? (
+                <><Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> Loading…</>
+              ) : (
+                'Load More'
+              )}
+            </button>
+          )}
+        </>
       )}
     </div>
   )
@@ -869,9 +939,18 @@ function SettingsView({ goals, onSaveGoals }) {
           <Settings size={14} />
           Account
         </span>
-        <p className="text-muted mt-2" style={{ fontSize: 13, marginBottom: 12 }}>
-          {user?.email}
-        </p>
+        <div style={{ marginTop: 8, marginBottom: 12, fontSize: 13 }}>
+          {user?.user_metadata?.username && (
+            <p className="text-muted" style={{ marginBottom: 4 }}>
+              @{user.user_metadata.username}
+            </p>
+          )}
+          {user?.user_metadata?.telegram_id && (
+            <p className="text-muted">
+              ID: {user.user_metadata.telegram_id}
+            </p>
+          )}
+        </div>
         <button className="btn btn-secondary" style={{ width: '100%', gap: 6 }} onClick={signOut}>
           <X size={16} />
           Sign Out
