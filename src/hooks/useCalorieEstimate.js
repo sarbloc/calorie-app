@@ -2,7 +2,7 @@ import { useState } from 'react'
 
 const EDGE_FUNCTION_URL = import.meta.env.VITE_SUPABASE_EDGE_FUNCTION_URL
 
-export function useCalorieEstimate() {
+export function useCalorieEstimate(accessToken) {
   const [estimate, setEstimate] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -31,6 +31,7 @@ export function useCalorieEstimate() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
           message: prompt,
