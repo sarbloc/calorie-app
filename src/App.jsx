@@ -250,6 +250,8 @@ function IntakeView({ userId, onAddEntry }) {
     const file = e.target.files?.[0]
     if (!file) return
     setUploading(true)
+    clearEstimate()
+    setScanName(''); setScanCalories(''); setScanProtein(''); setScanCarbs(''); setScanFat('')
 
     const reader = new FileReader()
     reader.onloadend = () => {
@@ -257,6 +259,36 @@ function IntakeView({ userId, onAddEntry }) {
       setUploading(false)
     }
     reader.readAsDataURL(file)
+  }
+
+  const handleEstimate = () => {
+    if (!imagePreview) return
+    estimateCalories(imagePreview, description)
+  }
+
+  const handleScanSubmit = async (e) => {
+    e.preventDefault()
+    if (!scanName || !scanCalories) return
+
+    setSubmitting(true)
+    await onAddEntry({
+      name:     scanName,
+      calories: parseInt(scanCalories) || 0,
+      protein:  parseInt(scanProtein)  || 0,
+      carbs:    parseInt(scanCarbs)    || 0,
+      fat:      parseInt(scanFat)      || 0,
+    })
+
+    setScanName(''); setScanCalories(''); setScanProtein(''); setScanCarbs(''); setScanFat('')
+    setImagePreview(null); setDescription(''); clearEstimate()
+    setSubmitted(true)
+    setSubmitting(false)
+    setTimeout(() => setSubmitted(false), 2000)
+  }
+
+  const handleClearScan = () => {
+    setImagePreview(null); setDescription(''); clearEstimate()
+    setScanName(''); setScanCalories(''); setScanProtein(''); setScanCarbs(''); setScanFat('')
   }
 
   const handleManualSubmit = async (e) => {
@@ -306,16 +338,168 @@ function IntakeView({ userId, onAddEntry }) {
       </div>
 
       {mode === 'scan' ? (
-        /* ── AI Photo Scan Mode (Coming Soon) ── */
-        <div className="card">
-          <div className="empty-state" style={{ padding: '32px 16px' }}>
-            <Sparkles size={40} color="#F59E0B" style={{ marginBottom: 12 }} />
-            <h3 style={{ marginBottom: 8 }}>Coming Soon</h3>
-            <p className="text-muted" style={{ fontSize: 13 }}>
-              AI-powered photo scanning will automatically estimate calories and macros from a photo of your meal.
-            </p>
+        /* ── AI Photo Scan Mode ── */
+        <form onSubmit={handleScanSubmit}>
+          <div className="card">
+            {/* Photo upload area */}
+            {!imagePreview ? (
+              <label
+                style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  justifyContent: 'center', gap: 8, padding: '32px 16px',
+                  border: '2px dashed rgba(255,255,255,0.15)', borderRadius: 12,
+                  cursor: 'pointer', textAlign: 'center',
+                }}
+              >
+                <Camera size={36} color="#22C55E" />
+                <span style={{ fontSize: 14, fontWeight: 500 }}>Tap to take or upload a photo</span>
+                <span className="text-muted" style={{ fontSize: 12 }}>of your meal</span>
+                <input
+                  type="file" accept="image/*"
+                  onChange={handleImageUpload} style={{ display: 'none' }}
+                />
+              </label>
+            ) : (
+              <div style={{ position: 'relative' }}>
+                <img
+                  src={imagePreview} alt="Meal preview"
+                  style={{ width: '100%', borderRadius: 12, maxHeight: 240, objectFit: 'cover' }}
+                />
+                <button
+                  type="button" onClick={handleClearScan}
+                  className="btn btn-secondary"
+                  style={{
+                    position: 'absolute', top: 8, right: 8,
+                    padding: '4px 8px', minHeight: 'auto', fontSize: 12,
+                  }}
+                >
+                  <X size={14} /> Clear
+                </button>
+              </div>
+            )}
+
+            {/* Optional description */}
+            {imagePreview && !estimate && (
+              <div className="input-group" style={{ marginTop: 12 }}>
+                <label className="input-label">
+                  <Edit3 size={12} style={{ marginRight: 4, verticalAlign: 'middle' }} />
+                  Description (optional)
+                </label>
+                <input
+                  type="text" className="input"
+                  placeholder="e.g., Large bowl of pasta with chicken"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
+              </div>
+            )}
+
+            {/* Estimate button */}
+            {imagePreview && !estimate && (
+              <button
+                type="button" onClick={handleEstimate}
+                className="btn btn-primary"
+                style={{ width: '100%', marginTop: 12, gap: 6 }}
+                disabled={estimating}
+              >
+                {estimating ? (
+                  <>
+                    <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                    Analyzing…
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={16} />
+                    Estimate Calories
+                  </>
+                )}
+              </button>
+            )}
+
+            {/* Error */}
+            {estimateError && (
+              <p style={{ color: '#EF4444', fontSize: 13, marginTop: 8, textAlign: 'center' }}>
+                {estimateError}
+              </p>
+            )}
+
+            {/* Editable results */}
+            {estimate && (
+              <>
+                <div className="input-group" style={{ marginTop: 12 }}>
+                  <label className="input-label">
+                    <Edit3 size={12} style={{ marginRight: 4, verticalAlign: 'middle' }} />
+                    Food Name
+                  </label>
+                  <input
+                    type="text" className="input"
+                    value={scanName}
+                    onChange={(e) => setScanName(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="input-group">
+                  <label className="input-label">
+                    <Flame size={12} style={{ marginRight: 4, verticalAlign: 'middle' }} />
+                    Calories (kcal)
+                  </label>
+                  <input
+                    type="number" className="input"
+                    value={scanCalories}
+                    onChange={(e) => setScanCalories(e.target.value)}
+                    required min="0"
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+                  {[
+                    { label: 'Protein (g)', value: scanProtein, setter: setScanProtein, icon: Egg, color: MACRO_COLORS.protein },
+                    { label: 'Carbs (g)',   value: scanCarbs,   setter: setScanCarbs,   icon: Wheat, color: MACRO_COLORS.carbs },
+                    { label: 'Fat (g)',     value: scanFat,     setter: setScanFat,     icon: Droplets, color: MACRO_COLORS.fat },
+                  ].map(({ label, value, setter, icon: Icon, color }) => (
+                    <div key={label} className="input-group">
+                      <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <Icon size={12} color={color} />
+                        {label.split(' ')[0]}
+                      </label>
+                      <input
+                        type="number" className="input"
+                        placeholder="0" value={value}
+                        onChange={(e) => setter(e.target.value)}
+                        min="0"
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  style={{ width: '100%', marginTop: 8, gap: 6 }}
+                  disabled={submitting || !scanName || !scanCalories}
+                >
+                  {submitted ? (
+                    <>
+                      <Check size={16} />
+                      Added!
+                    </>
+                  ) : submitting ? (
+                    <>
+                      <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                      Saving…
+                    </>
+                  ) : (
+                    <>
+                      <Plus size={16} />
+                      Log Entry
+                    </>
+                  )}
+                </button>
+              </>
+            )}
           </div>
-        </div>
+        </form>
       ) : (
         /* ── Manual Entry Mode ── */
         <form onSubmit={handleManualSubmit}>
