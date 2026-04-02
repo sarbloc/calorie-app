@@ -164,7 +164,7 @@ function DashboardView({ user, meals, goals }) {
           entries.map((entry) => (
             <div key={entry.id} className="food-entry">
               <div className="food-info">
-                <h4>{entry.name}</h4>
+                <h4>{entry.description}</h4>
                 <p>{entry.protein || 0}g P · {entry.carbs || 0}g C · {entry.fats || 0}g F</p>
               </div>
               <span className="food-calories">{entry.calories || 0} kcal</span>

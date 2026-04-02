@@ -57,7 +57,7 @@ export function useMeals(userId) {
 
     const { data, error } = await supabase
       .from('meals')
-      .insert([{ user_id: userId, name, calories, protein, carbs, fats: fat }])
+      .insert([{ user_id: userId, description: name, calories, protein, carbs, fats: fat }])
       .select()
       .single()
 
