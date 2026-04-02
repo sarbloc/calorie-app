@@ -261,7 +261,7 @@ function HistoryView({ userId }) {
                       {entry.meal_type?.toLowerCase()} · {entry.protein || 0}g P · {entry.carbs || 0}g C · {entry.fats || 0}g F
                     </div>
                   </div>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: '#22C55E' }}>{entry.calories} kcal</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#22C55E', whiteSpace: 'nowrap', marginLeft: 12 }}>{entry.calories} kcal</span>
                 </div>
               ))}
             </div>
