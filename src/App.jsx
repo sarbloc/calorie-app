@@ -215,7 +215,7 @@ function HistoryView({ userId }) {
 }
 
 function IntakeView({ userId, onAddEntry }) {
-  const [mode, setMode] = useState('manual') // 'scan' | 'manual'
+  const [mode, setMode] = useState('scan') // 'scan' | 'manual'
   const [name, setName]     = useState('')
   const [calories, setCalories] = useState('')
   const [protein, setProtein]   = useState('')
@@ -354,7 +354,7 @@ function IntakeView({ userId, onAddEntry }) {
                 <span style={{ fontSize: 14, fontWeight: 500 }}>Tap to take or upload a photo</span>
                 <span className="text-muted" style={{ fontSize: 12 }}>of your meal</span>
                 <input
-                  type="file" accept="image/*" capture="environment"
+                  type="file" accept="image/*"
                   onChange={handleImageUpload} style={{ display: 'none' }}
                 />
               </label>
