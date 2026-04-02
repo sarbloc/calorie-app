@@ -252,12 +252,25 @@ function IntakeView({ userId, onAddEntry }) {
     clearEstimate()
     setScanName(''); setScanCalories(''); setScanProtein(''); setScanCarbs(''); setScanFat('')
 
-    const reader = new FileReader()
-    reader.onloadend = () => {
-      setImagePreview(reader.result)
+    const img = new Image()
+    img.onload = () => {
+      const MAX = 1000
+      let { width, height } = img
+      if (width > MAX || height > MAX) {
+        const scale = MAX / Math.max(width, height)
+        width = Math.round(width * scale)
+        height = Math.round(height * scale)
+      }
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height)
+      const resized = canvas.toDataURL('image/jpeg', 0.8)
+      setImagePreview(resized)
       setUploading(false)
+      URL.revokeObjectURL(img.src)
     }
-    reader.readAsDataURL(file)
+    img.src = URL.createObjectURL(file)
   }
 
   const handleEstimate = () => {
