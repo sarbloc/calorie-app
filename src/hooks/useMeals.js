@@ -52,12 +52,12 @@ export function useMeals(userId) {
     fetchMeals()
   }, [fetchMeals])
 
-  const addMeal = async ({ name, calories, protein, carbs, fat }) => {
+  const addMeal = async ({ name, calories, protein, carbs, fat, mealType = 'SNACK' }) => {
     if (!isSupabaseConfigured || !userId) return { error: 'Not configured' }
 
     const { data, error } = await supabase
       .from('meals')
-      .insert([{ user_id: userId, description: name, calories, protein, carbs, fats: fat }])
+      .insert([{ user_id: userId, description: name, meal_type: mealType, calories, protein, carbs, fats: fat }])
       .select()
       .single()
 
