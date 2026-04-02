@@ -216,6 +216,7 @@ function HistoryView({ userId }) {
 
 function IntakeView({ userId, onAddEntry }) {
   const [mode, setMode] = useState('scan') // 'scan' | 'manual'
+  const [mealType, setMealType] = useState('')
   const [name, setName]     = useState('')
   const [calories, setCalories] = useState('')
   const [protein, setProtein]   = useState('')
@@ -280,7 +281,7 @@ function IntakeView({ userId, onAddEntry }) {
 
   const handleScanSubmit = async (e) => {
     e.preventDefault()
-    if (!scanName || !scanCalories) return
+    if (!scanName || !scanCalories || !mealType) return
 
     setSubmitting(true)
     await onAddEntry({
@@ -289,10 +290,11 @@ function IntakeView({ userId, onAddEntry }) {
       protein:  parseInt(scanProtein)  || 0,
       carbs:    parseInt(scanCarbs)    || 0,
       fat:      parseInt(scanFat)      || 0,
+      mealType,
     })
 
     setScanName(''); setScanCalories(''); setScanProtein(''); setScanCarbs(''); setScanFat('')
-    setImagePreview(null); setDescription(''); clearEstimate()
+    setImagePreview(null); setDescription(''); clearEstimate(); setMealType('')
     setSubmitted(true)
     setSubmitting(false)
     setTimeout(() => setSubmitted(false), 2000)
@@ -305,7 +307,7 @@ function IntakeView({ userId, onAddEntry }) {
 
   const handleManualSubmit = async (e) => {
     e.preventDefault()
-    if (!name || !calories) return
+    if (!name || !calories || !mealType) return
 
     setSubmitting(true)
     await onAddEntry({
@@ -314,9 +316,10 @@ function IntakeView({ userId, onAddEntry }) {
       protein:  parseInt(protein)  || 0,
       carbs:    parseInt(carbs)    || 0,
       fat:      parseInt(fat)      || 0,
+      mealType,
     })
 
-    setName(''); setCalories(''); setProtein(''); setCarbs(''); setFat('')
+    setName(''); setCalories(''); setProtein(''); setCarbs(''); setFat(''); setMealType('')
     setSubmitted(true)
     setSubmitting(false)
     setTimeout(() => setSubmitted(false), 2000)
@@ -347,6 +350,28 @@ function IntakeView({ userId, onAddEntry }) {
           <Edit3 size={16} />
           Manual Entry
         </button>
+      </div>
+
+      {/* Meal Type */}
+      <div className="card" style={{ marginBottom: 16, padding: 12 }}>
+        <label className="input-label" style={{ marginBottom: 6 }}>
+          Meal Type
+        </label>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+          {['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK'].map((type) => (
+            <button
+              key={type} type="button"
+              className={`btn ${mealType === type ? 'btn-primary' : 'btn-secondary'}`}
+              style={{
+                padding: '8px 4px', fontSize: 12, textTransform: 'capitalize',
+                border: !mealType && submitting ? '1px solid #EF4444' : undefined,
+              }}
+              onClick={() => setMealType(type)}
+            >
+              {type.toLowerCase()}
+            </button>
+          ))}
+        </div>
       </div>
 
       {mode === 'scan' ? (
@@ -489,7 +514,7 @@ function IntakeView({ userId, onAddEntry }) {
                   type="submit"
                   className="btn btn-primary"
                   style={{ width: '100%', marginTop: 8, gap: 6 }}
-                  disabled={submitting || !scanName || !scanCalories}
+                  disabled={submitting || !scanName || !scanCalories || !mealType}
                 >
                   {submitted ? (
                     <>
@@ -569,7 +594,7 @@ function IntakeView({ userId, onAddEntry }) {
               type="submit"
               className="btn btn-primary"
               style={{ width: '100%', marginTop: 8, gap: 6 }}
-              disabled={submitting || !name || !calories}
+              disabled={submitting || !name || !calories || !mealType}
             >
               {submitted ? (
                 <>
