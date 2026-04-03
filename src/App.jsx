@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from './contexts/AuthContext'
 import { supabase, isSupabaseConfigured } from './lib/supabase'
-import { useMeals } from './hooks/useMeals'
+import { useMeals, getMealPhotoUrl } from './hooks/useMeals'
 import { useGoals } from './hooks/useGoals'
 import { useCalorieEstimate } from './hooks/useCalorieEstimate'
 import LoginView from './views/LoginView'
@@ -84,11 +84,51 @@ function MacroDonutChart({ totals, goals }) {
   )
 }
 
+// ─── Meal Photo Thumbnail ────────────────────────────────────────────────────
+
+function MealPhotoThumb({ photoPath, alt, onExpand }) {
+  const [url, setUrl] = useState(null)
+  const fetched = useRef(false)
+
+  useEffect(() => {
+    if (!photoPath || fetched.current) return
+    fetched.current = true
+    getMealPhotoUrl(photoPath).then(u => { if (u) setUrl(u) })
+  }, [photoPath])
+
+  if (!url) return null
+
+  return (
+    <img
+      src={url}
+      alt={alt || 'Meal photo'}
+      className="meal-photo-thumb"
+      onClick={(e) => { e.stopPropagation(); onExpand?.(url) }}
+      loading="lazy"
+    />
+  )
+}
+
+function PhotoPreviewModal({ url, onClose }) {
+  if (!url) return null
+  return (
+    <div className="meal-photo-overlay" onClick={onClose}>
+      <div className="meal-photo-preview-wrap" onClick={(e) => e.stopPropagation()}>
+        <img src={url} alt="Meal photo" className="meal-photo-preview" />
+        <button className="btn btn-secondary meal-photo-close" onClick={onClose}>
+          <X size={16} /> Close
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ─── Sub-views ───────────────────────────────────────────────────────────────
 
 function DashboardView({ user, meals, goals }) {
   const { entries, totals } = meals
   const { goals: g } = goals
+  const [previewUrl, setPreviewUrl] = useState(null)
 
   const consumed = totals.total_calories || 0
   const calorieGoal = g.calorie_goal || 2000
@@ -158,6 +198,13 @@ function DashboardView({ user, meals, goals }) {
         {entries.length > 0 ? (
           entries.map((entry) => (
             <div key={entry.id} className="food-entry">
+              {entry.photo_path && (
+                <MealPhotoThumb
+                  photoPath={entry.photo_path}
+                  alt={entry.description}
+                  onExpand={setPreviewUrl}
+                />
+              )}
               <div className="food-info">
                 <h4>{entry.description}</h4>
                 <p>{entry.protein || 0}g P · {entry.carbs || 0}g C · {entry.fats || 0}g F</p>
@@ -171,6 +218,7 @@ function DashboardView({ user, meals, goals }) {
           </div>
         )}
       </div>
+      <PhotoPreviewModal url={previewUrl} onClose={() => setPreviewUrl(null)} />
     </div>
   )
 }
@@ -181,6 +229,7 @@ function HistoryView({ userId }) {
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(true)
+  const [previewUrl, setPreviewUrl] = useState(null)
 
   const fetchPage = useCallback(async (offset = 0) => {
     if (!isSupabaseConfigured || !userId) return
@@ -252,10 +301,17 @@ function HistoryView({ userId }) {
               </div>
               {dayEntries.map((entry) => (
                 <div key={entry.id} style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  display: 'flex', alignItems: 'center', gap: 10,
                   padding: '8px 0', borderTop: '1px solid rgba(255,255,255,0.06)',
                 }}>
-                  <div>
+                  {entry.photo_path && (
+                    <MealPhotoThumb
+                      photoPath={entry.photo_path}
+                      alt={entry.description}
+                      onExpand={setPreviewUrl}
+                    />
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 13, fontWeight: 500 }}>{entry.description}</div>
                     <div className="text-muted" style={{ fontSize: 11 }}>
                       {entry.meal_type?.toLowerCase()} · {entry.protein || 0}g P · {entry.carbs || 0}g C · {entry.fats || 0}g F
@@ -282,6 +338,7 @@ function HistoryView({ userId }) {
           )}
         </>
       )}
+      <PhotoPreviewModal url={previewUrl} onClose={() => setPreviewUrl(null)} />
     </div>
   )
 }
@@ -376,6 +433,7 @@ function IntakeView({ userId, onAddEntry, autoOpenCamera, onAutoOpenCameraHandle
       carbs:    parseInt(scanCarbs)    || 0,
       fat:      parseInt(scanFat)      || 0,
       mealType,
+      photoBase64: imagePreview,
     })
 
     setScanName(''); setScanCalories(''); setScanProtein(''); setScanCarbs(''); setScanFat('')
