@@ -369,8 +369,6 @@ function IntakeView({ userId, onAddEntry, autoOpenCamera, onAutoOpenCameraHandle
   const [scanProtein, setScanProtein]   = useState('')
   const [scanCarbs, setScanCarbs]       = useState('')
   const [scanFat, setScanFat]           = useState('')
-  const [autoEstimate, setAutoEstimate] = useState(false)
-
   useEffect(() => {
     if (estimate) {
       setScanName(estimate.name || 'AI Photo Scan')
@@ -392,21 +390,12 @@ function IntakeView({ userId, onAddEntry, autoOpenCamera, onAutoOpenCameraHandle
     }
   }, [autoOpenCamera, onAutoOpenCameraHandled])
 
-  // Auto-trigger AI estimation after camera capture
-  useEffect(() => {
-    if (autoEstimate && imagePreview && !estimating && !estimate) {
-      setAutoEstimate(false)
-      estimateCalories(imagePreview, description, mealType)
-    }
-  }, [autoEstimate, imagePreview, estimating, estimate, estimateCalories, description, mealType])
-
-  const handleImageUpload = (e, fromCamera = false) => {
+  const handleImageUpload = (e) => {
     const file = e.target.files?.[0]
     if (!file) return
     setUploading(true)
     clearEstimate()
     setScanName(''); setScanCalories(''); setScanProtein(''); setScanCarbs(''); setScanFat('')
-    if (fromCamera) setAutoEstimate(true)
 
     const img = new Image()
     img.onload = () => {
@@ -544,7 +533,7 @@ function IntakeView({ userId, onAddEntry, autoOpenCamera, onAutoOpenCameraHandle
       <input
         ref={cameraInputRef}
         type="file" accept="image/*" capture="environment"
-        onChange={(e) => handleImageUpload(e, true)}
+        onChange={handleImageUpload}
         style={{ display: 'none' }}
       />
 
