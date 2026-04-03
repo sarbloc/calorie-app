@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { AlertTriangle, Salad, Loader2 } from 'lucide-react'
 
+const ACCENT = '#F97316'
+
 export default function LoginView() {
   const { signInWithTelegram, isConfigured, authError } = useAuth()
   const [loading, setLoading] = useState(false)
@@ -40,11 +42,11 @@ export default function LoginView() {
   if (isTelegram) {
     return (
       <div className="view">
-        <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <Salad size={48} color="#22C55E" style={{ marginBottom: 8 }} />
-          <h1 style={{ fontSize: 24, fontWeight: '700' }}>Calorie Tracker</h1>
-          <p className="text-muted" style={{ fontSize: 14, marginTop: 4 }}>
-            Sign in to continue
+        <div style={{ textAlign: 'center', marginBottom: 32, marginTop: 40 }}>
+          <Salad size={52} color={ACCENT} style={{ marginBottom: 12 }} />
+          <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: -0.5 }}>Calorie Tracker</h1>
+          <p style={{ fontSize: 14, marginTop: 6, color: 'var(--text-muted)' }}>
+            Track your nutrition effortlessly
           </p>
         </div>
 
@@ -53,22 +55,6 @@ export default function LoginView() {
             className="btn-telegram"
             onClick={handleTelegramSignIn}
             disabled={loading}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 10,
-              width: '100%',
-              padding: '12px 16px',
-              backgroundColor: '#0088CC',
-              color: 'white',
-              border: 'none',
-              borderRadius: 8,
-              fontSize: 16,
-              fontWeight: 600,
-              cursor: loading ? 'not-allowed' : 'pointer',
-              opacity: loading ? 0.7 : 1,
-            }}
           >
             {loading ? (
               <>
@@ -86,7 +72,7 @@ export default function LoginView() {
           </button>
 
           {authError && (
-            <p style={{ color: '#EF4444', fontSize: 13, marginTop: 12, textAlign: 'center' }}>
+            <p style={{ color: 'var(--danger)', fontSize: 13, marginTop: 12, textAlign: 'center' }}>
               {authError}
             </p>
           )}
@@ -98,38 +84,41 @@ export default function LoginView() {
   // Fallback for browser/dev testing
   return (
     <div className="view">
-      <div style={{ textAlign: 'center', marginBottom: 24 }}>
-        <Salad size={48} color="#22C55E" style={{ marginBottom: 8 }} />
-        <h1 style={{ fontSize: 24, fontWeight: '700' }}>Calorie Tracker</h1>
-        <p className="text-muted" style={{ fontSize: 14, marginTop: 4 }}>
-          Sign in to continue
+      <div style={{ textAlign: 'center', marginBottom: 32, marginTop: 40 }}>
+        <Salad size={52} color={ACCENT} style={{ marginBottom: 12 }} />
+        <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: -0.5 }}>Calorie Tracker</h1>
+        <p style={{ fontSize: 14, marginTop: 6, color: 'var(--text-muted)' }}>
+          Track your nutrition effortlessly
         </p>
       </div>
 
       <div className="card">
-        <div style={{ 
-          padding: 16, 
-          backgroundColor: '#FEF3C7', 
-          borderRadius: 8, 
+        <div style={{
+          padding: 14,
+          background: 'rgba(245, 158, 11, 0.08)',
+          border: '1px solid rgba(245, 158, 11, 0.15)',
+          borderRadius: 10,
           marginBottom: 16,
           fontSize: 13,
-          color: '#92400E'
+          color: '#F59E0B'
         }}>
-          <strong>⚠️ This app works best inside Telegram.</strong>
-          <p style={{ margin: '8px 0 0' }}>
+          <strong>This app works best inside Telegram.</strong>
+          <p style={{ margin: '8px 0 0', color: 'var(--text-secondary)' }}>
             Open this page from your Telegram mini-app to sign in automatically.
           </p>
         </div>
-        
-        <div style={{ textAlign: 'center', color: '#6B7280', fontSize: 13 }}>
-          <p>To test locally, you can use browser DevTools to simulate Telegram:</p>
-          <code style={{ 
-            display: 'block', 
-            marginTop: 8, 
-            padding: 8, 
-            backgroundColor: '#F3F4F6', 
-            borderRadius: 4,
-            fontSize: 11
+
+        <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
+          <p>To test locally, simulate Telegram in DevTools:</p>
+          <code style={{
+            display: 'block',
+            marginTop: 8,
+            padding: 10,
+            background: 'var(--glass-bg)',
+            border: '1px solid var(--glass-border)',
+            borderRadius: 8,
+            fontSize: 11,
+            color: 'var(--text-secondary)'
           }}>
 {"window.Telegram = { WebApp: { initData: 'test' } }"}</code>
         </div>
