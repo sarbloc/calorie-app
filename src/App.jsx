@@ -274,7 +274,7 @@ function HistoryView({ userId }) {
   return (
     <div className="view">
       <h1 className="mb-4" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <Calendar size={24} color="#F97316" />
+        <Calendar size={24} color={ACCENT} />
         History
       </h1>
 
@@ -320,7 +320,7 @@ function HistoryView({ userId }) {
                       {entry.meal_type?.toLowerCase()} · {entry.protein || 0}g P · {entry.carbs || 0}g C · {entry.fats || 0}g F
                     </div>
                   </div>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: '#F97316', whiteSpace: 'nowrap', marginLeft: 12 }}>{entry.calories} kcal</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: ACCENT, whiteSpace: 'nowrap', marginLeft: 12 }}>{entry.calories} kcal</span>
                 </div>
               ))}
             </div>
@@ -474,7 +474,7 @@ function IntakeView({ userId, onAddEntry, autoOpenCamera, onAutoOpenCameraHandle
   return (
     <div className="view">
       <h1 className="mb-4" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <Plus size={24} color="#F97316" />
+        <Plus size={24} color={ACCENT} />
         Log Intake
       </h1>
 
@@ -537,7 +537,7 @@ function IntakeView({ userId, onAddEntry, autoOpenCamera, onAutoOpenCameraHandle
             {/* Photo upload area */}
             {!imagePreview ? (
               <label className="upload-area">
-                <Camera size={36} color="#F97316" />
+                <Camera size={36} color={ACCENT} />
                 <span style={{ fontSize: 14, fontWeight: 500 }}>Tap to take or upload a photo</span>
                 <span className="text-muted" style={{ fontSize: 12 }}>of your meal</span>
                 <input
@@ -882,7 +882,7 @@ function SettingsView({ goals, onSaveGoals }) {
   return (
     <div className="view">
       <h1 className="mb-4" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <Settings size={24} color="#F97316" />
+        <Settings size={24} color={ACCENT} />
         Settings
       </h1>
 
@@ -892,9 +892,9 @@ function SettingsView({ goals, onSaveGoals }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div style={{
               width: 8, height: 8, borderRadius: '50%',
-              background: caloriePct <= 100 ? '#F97316' : '#EF4444',
+              background: caloriePct <= 100 ? ACCENT : '#EF4444',
             }} />
-            <span style={{ fontSize: 12, color: caloriePct <= 100 ? '#F97316' : '#EF4444' }}>
+            <span style={{ fontSize: 12, color: caloriePct <= 100 ? ACCENT : '#EF4444' }}>
               {caloriePct}% of budget
             </span>
           </div>
