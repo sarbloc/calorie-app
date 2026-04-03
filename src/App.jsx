@@ -393,6 +393,7 @@ function IntakeView({ userId, onAddEntry, autoOpenCamera, onAutoOpenCameraHandle
   const handleImageUpload = (e) => {
     const file = e.target.files?.[0]
     if (!file) return
+    e.target.value = ''
     setUploading(true)
     clearEstimate()
     setScanName(''); setScanCalories(''); setScanProtein(''); setScanCarbs(''); setScanFat('')
