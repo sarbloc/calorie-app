@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { AlertTriangle, Salad, Loader2 } from 'lucide-react'
 
+const ACCENT = '#F97316'
+
 export default function LoginView() {
   const { signInWithTelegram, isConfigured, authError } = useAuth()
   const [loading, setLoading] = useState(false)
@@ -41,7 +43,7 @@ export default function LoginView() {
     return (
       <div className="view">
         <div style={{ textAlign: 'center', marginBottom: 32, marginTop: 40 }}>
-          <Salad size={52} color="#F97316" style={{ marginBottom: 12 }} />
+          <Salad size={52} color={ACCENT} style={{ marginBottom: 12 }} />
           <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: -0.5 }}>Calorie Tracker</h1>
           <p style={{ fontSize: 14, marginTop: 6, color: 'var(--text-muted)' }}>
             Track your nutrition effortlessly
@@ -83,7 +85,7 @@ export default function LoginView() {
   return (
     <div className="view">
       <div style={{ textAlign: 'center', marginBottom: 32, marginTop: 40 }}>
-        <Salad size={52} color="#F97316" style={{ marginBottom: 12 }} />
+        <Salad size={52} color={ACCENT} style={{ marginBottom: 12 }} />
         <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: -0.5 }}>Calorie Tracker</h1>
         <p style={{ fontSize: 14, marginTop: 6, color: 'var(--text-muted)' }}>
           Track your nutrition effortlessly
