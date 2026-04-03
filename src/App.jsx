@@ -1140,6 +1140,7 @@ export default function App() {
 
   return (
     <div className="app-container">
+      <div className="bg-blobs" aria-hidden="true" />
       <style>{`
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>

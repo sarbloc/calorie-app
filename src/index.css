@@ -10,11 +10,11 @@
   --bg-tertiary: #1A1A1A;
 
   /* ── Glass ── */
-  --glass-bg: rgba(255, 255, 255, 0.05);
-  --glass-bg-hover: rgba(255, 255, 255, 0.08);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-border-hover: rgba(255, 255, 255, 0.14);
-  --glass-blur: 20px;
+  --glass-bg: rgba(255, 255, 255, 0.06);
+  --glass-bg-hover: rgba(255, 255, 255, 0.09);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-border-hover: rgba(255, 255, 255, 0.16);
+  --glass-blur: 24px;
   --glass-highlight: rgba(255, 255, 255, 0.06);
 
   /* ── Accent (warm orange) ── */
@@ -62,29 +62,56 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Ambient background glow */
-body::before {
-  content: '';
+/* ── Animated gradient blobs ── */
+.bg-blobs {
   position: fixed;
-  top: -30%;
-  left: -20%;
-  width: 60%;
-  height: 60%;
-  background: radial-gradient(circle, rgba(249, 115, 22, 0.06) 0%, transparent 70%);
-  pointer-events: none;
+  inset: 0;
   z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
 }
 
-body::after {
+.bg-blobs::before {
   content: '';
-  position: fixed;
-  bottom: -20%;
-  right: -20%;
-  width: 50%;
-  height: 50%;
-  background: radial-gradient(circle, rgba(59, 130, 246, 0.04) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 0;
+  position: absolute;
+  width: 120%;
+  height: 120%;
+  top: -10%;
+  left: -10%;
+  background:
+    radial-gradient(circle at 20% 15%, rgba(249, 115, 22, 0.22) 0%, transparent 45%),
+    radial-gradient(circle at 80% 75%, rgba(59, 130, 246, 0.14) 0%, transparent 45%),
+    radial-gradient(circle at 65% 10%, rgba(244, 63, 94, 0.10) 0%, transparent 35%);
+  filter: blur(60px);
+  animation: blobDrift 25s ease-in-out infinite alternate;
+}
+
+.bg-blobs::after {
+  content: '';
+  position: absolute;
+  width: 120%;
+  height: 120%;
+  top: -10%;
+  left: -10%;
+  background:
+    radial-gradient(circle at 75% 25%, rgba(249, 115, 22, 0.15) 0%, transparent 40%),
+    radial-gradient(circle at 25% 65%, rgba(168, 85, 247, 0.12) 0%, transparent 40%),
+    radial-gradient(circle at 50% 45%, rgba(245, 158, 11, 0.08) 0%, transparent 35%);
+  filter: blur(80px);
+  animation: blobDrift2 30s ease-in-out infinite alternate;
+}
+
+@keyframes blobDrift {
+  0%   { transform: translate(0, 0) scale(1); }
+  33%  { transform: translate(5%, -8%) scale(1.05); }
+  66%  { transform: translate(-3%, 5%) scale(0.97); }
+  100% { transform: translate(8%, -3%) scale(1.02); }
+}
+
+@keyframes blobDrift2 {
+  0%   { transform: translate(0, 0) scale(1) rotate(0deg); }
+  50%  { transform: translate(-6%, 4%) scale(1.04) rotate(3deg); }
+  100% { transform: translate(4%, -6%) scale(0.98) rotate(-2deg); }
 }
 
 #root {
