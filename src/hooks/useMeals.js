@@ -143,19 +143,19 @@ export function useMeals(userId) {
 
     const entry = entries.find(e => e.id === id)
 
-    // Delete photo from storage if it exists
-    if (entry?.photo_path) {
-      const { error: storageError } = await supabase.storage
-        .from('meal_photos')
-        .remove([entry.photo_path])
-      if (storageError) {
-        console.error('[deleteMeal] Failed to delete photo:', storageError.message)
-      }
-    }
-
     const { error } = await supabase.from('meals').delete().eq('id', id).eq('user_id', userId)
 
     if (!error && entry) {
+      // Delete photo from storage after DB delete succeeds
+      if (entry.photo_path) {
+        const { error: storageError } = await supabase.storage
+          .from('meal_photos')
+          .remove([entry.photo_path])
+        if (storageError) {
+          console.error('[deleteMeal] Failed to delete photo:', storageError.message)
+        }
+      }
+
       setEntries(prev => prev.filter(e => e.id !== id))
       setTotals(prev => ({
         total_calories: Math.max(0, prev.total_calories - (entry.calories || 0)),
