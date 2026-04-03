@@ -348,7 +348,7 @@ function IntakeView({ userId, onAddEntry }) {
 
   const handleEstimate = () => {
     if (!imagePreview) return
-    estimateCalories(imagePreview, description)
+    estimateCalories(imagePreview, description, mealType)
   }
 
   const handleScanSubmit = async (e) => {
@@ -581,6 +581,32 @@ function IntakeView({ userId, onAddEntry }) {
                     </div>
                   ))}
                 </div>
+
+                {/* Item breakdown from AI */}
+                {estimate?.items && estimate.items.length > 1 && (
+                  <div style={{
+                    marginTop: 12, padding: 10, borderRadius: 10,
+                    background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                  }}>
+                    <p style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.5)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                      Identified Items
+                    </p>
+                    {estimate.items.map((item, i) => (
+                      <div key={i} style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        padding: '4px 0', borderTop: i > 0 ? '1px solid rgba(255,255,255,0.06)' : 'none',
+                      }}>
+                        <span style={{ fontSize: 13 }}>
+                          {item.name}
+                          {item.portion && <span style={{ color: 'rgba(255,255,255,0.4)', marginLeft: 4, fontSize: 11 }}>({item.portion})</span>}
+                        </span>
+                        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', whiteSpace: 'nowrap', marginLeft: 8 }}>
+                          {item.calories} kcal
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 <button
                   type="submit"

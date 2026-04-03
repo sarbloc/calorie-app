@@ -66,6 +66,20 @@ Deno.serve(async (req) => {
         model: 'moonshotai/kimi-k2.5',
         messages: [
           {
+            role: 'system',
+            content: [
+              'You are an expert nutritionist and food portion analyst.',
+              'When given a food photo, you must:',
+              '1. Identify every distinct food item visible in the image.',
+              '2. Estimate the portion size of each item using common measurements (cups, pieces, slices, oz, etc.).',
+              '3. Estimate calories (kcal), protein (g), carbs (g), and fat (g) for each item.',
+              '4. If the user provides a description, treat it as the primary source of truth for what the food is.',
+              '5. If a meal type is provided (breakfast, lunch, dinner, snack), use it as context for typical portion sizes.',
+              '6. Think step-by-step internally about portions and composition, but return ONLY valid JSON — no explanation, no markdown fences.',
+              '7. Return an object with "items" (array of identified foods) and "total" (aggregated nutritional values).',
+            ].join(' '),
+          },
+          {
             role: 'user',
             content: [
               { type: 'text', text: message },
