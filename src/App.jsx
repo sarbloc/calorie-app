@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from './contexts/AuthContext'
 import { supabase, isSupabaseConfigured } from './lib/supabase'
 import { useMeals } from './hooks/useMeals'
@@ -286,7 +286,7 @@ function HistoryView({ userId }) {
   )
 }
 
-function IntakeView({ userId, onAddEntry }) {
+function IntakeView({ userId, onAddEntry, autoOpenCamera, onAutoOpenCameraHandled }) {
   const [mode, setMode] = useState('scan') // 'scan' | 'manual'
   const [mealType, setMealType] = useState('')
   const [name, setName]     = useState('')
@@ -299,6 +299,7 @@ function IntakeView({ userId, onAddEntry }) {
   const [uploading, setUploading]       = useState(false)
   const [submitting, setSubmitting]     = useState(false)
   const [submitted, setSubmitted]       = useState(false)
+  const fileInputRef = useRef(null)
 
   // AI estimation
   const { estimate, loading: estimating, error: estimateError, estimateCalories, clearEstimate } = useCalorieEstimate()
@@ -317,6 +318,18 @@ function IntakeView({ userId, onAddEntry }) {
       setScanFat(String(estimate.fat || 0))
     }
   }, [estimate])
+
+  useEffect(() => {
+    if (autoOpenCamera) {
+      setMode('scan')
+      // Small delay to ensure the file input is rendered
+      const timer = setTimeout(() => {
+        fileInputRef.current?.click()
+      }, 100)
+      onAutoOpenCameraHandled()
+      return () => clearTimeout(timer)
+    }
+  }, [autoOpenCamera, onAutoOpenCameraHandled])
 
   const handleImageUpload = (e) => {
     const file = e.target.files?.[0]
@@ -464,6 +477,7 @@ function IntakeView({ userId, onAddEntry }) {
                 <span style={{ fontSize: 14, fontWeight: 500 }}>Tap to take or upload a photo</span>
                 <span className="text-muted" style={{ fontSize: 12 }}>of your meal</span>
                 <input
+                  ref={fileInputRef}
                   type="file" accept="image/*"
                   onChange={handleImageUpload} style={{ display: 'none' }}
                 />
@@ -1007,6 +1021,16 @@ export default function App() {
   const goals  = useGoals(userId)
 
   const [currentView, setCurrentView] = useState('dashboard')
+  const [autoOpenCamera, setAutoOpenCamera] = useState(false)
+
+  const handleAutoOpenCameraHandled = useCallback(() => {
+    setAutoOpenCamera(false)
+  }, [])
+
+  const handleCameraFab = useCallback(() => {
+    setCurrentView('intake')
+    setAutoOpenCamera(true)
+  }, [])
 
   if (loading) {
     return (
@@ -1035,16 +1059,18 @@ export default function App() {
     switch (currentView) {
       case 'dashboard': return <DashboardView user={user} meals={meals}  goals={goals} />
       case 'history':   return <HistoryView   userId={userId} />
-      case 'intake':     return <IntakeView    userId={userId} onAddEntry={meals.addMeal} />
+      case 'intake':     return <IntakeView    userId={userId} onAddEntry={meals.addMeal} autoOpenCamera={autoOpenCamera} onAutoOpenCameraHandled={handleAutoOpenCameraHandled} />
       case 'settings':   return <SettingsView  goals={goals.goals} onSaveGoals={goals.saveGoals} />
       default:           return <DashboardView user={user} meals={meals} goals={goals} />
     }
   }
 
-  const navItems = [
+  const leftNav = [
     { key: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { key: 'intake',    icon: Plus,            label: 'Log'       },
     { key: 'history',   icon: Calendar,        label: 'History'   },
+  ]
+  const rightNav = [
+    { key: 'intake',    icon: Plus,            label: 'Log'       },
     { key: 'settings',  icon: Settings,        label: 'Settings'  },
   ]
 
@@ -1056,7 +1082,24 @@ export default function App() {
       <main className="main-content">{renderView()}</main>
 
       <nav className="nav-bar">
-        {navItems.map(({ key, icon: Icon, label }) => (
+        {leftNav.map(({ key, icon: Icon, label }) => (
+          <button
+            key={key}
+            className={`nav-item ${currentView === key ? 'active' : ''}`}
+            onClick={() => setCurrentView(key)}
+          >
+            <Icon size={20} />
+            <span>{label}</span>
+          </button>
+        ))}
+        <button
+          className="nav-camera-btn"
+          onClick={handleCameraFab}
+          aria-label="Scan food with camera"
+        >
+          <Camera size={26} />
+        </button>
+        {rightNav.map(({ key, icon: Icon, label }) => (
           <button
             key={key}
             className={`nav-item ${currentView === key ? 'active' : ''}`}
