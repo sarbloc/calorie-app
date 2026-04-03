@@ -12,12 +12,14 @@ import {
 } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 
-// ─── Donut Chart Colors (Neon Theme) ───────────────────────────────────────
+// ─── Macro Colors ──────────────────────────────────────────────────────────
 const MACRO_COLORS = {
-  protein: '#F43F5E', // soft red/pink (rose-500)
-  carbs:   '#3B82F6', // blue
-  fat:     '#F59E0B', // amber
+  protein: '#F43F5E',
+  carbs:   '#3B82F6',
+  fat:     '#F59E0B',
 }
+
+const ACCENT = '#F97316'
 
 function MacroDonutChart({ totals, goals }) {
   const protein = totals.total_protein || 0
@@ -61,11 +63,12 @@ function MacroDonutChart({ totals, goals }) {
             </Pie>
             <Tooltip
               contentStyle={{
-                background: '#1A1A1A',
-                border: '1px solid #333',
-                borderRadius: 8,
+                background: 'rgba(20, 20, 20, 0.95)',
+                backdropFilter: 'blur(12px)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 10,
                 fontSize: 13,
-                color: '#fff',
+                color: '#F5F5F5',
               }}
               formatter={(value, name) => [`${value}g`, name]}
             />
@@ -76,7 +79,7 @@ function MacroDonutChart({ totals, goals }) {
         {data.map(({ name, value, color }) => (
           <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: color }} />
-            <span style={{ fontSize: 12, color: '#A3A3A3' }}>{name} {value}g</span>
+            <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{name} {value}g</span>
           </div>
         ))}
       </div>
@@ -138,7 +141,7 @@ function DashboardView({ user, meals, goals }) {
   return (
     <div className="view">
       <h1 className="mb-4" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <LayoutDashboard size={24} color="#22C55E" />
+        <LayoutDashboard size={24} color={ACCENT} />
         Today
       </h1>
 
@@ -271,20 +274,20 @@ function HistoryView({ userId }) {
   return (
     <div className="view">
       <h1 className="mb-4" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <Calendar size={24} color="#22C55E" />
+        <Calendar size={24} color="#F97316" />
         History
       </h1>
 
       {loading ? (
         <div className="card">
           <div className="empty-state">
-            <Loader2 size={32} color="#666" style={{ animation: 'spin 1s linear infinite' }} />
+            <Loader2 size={32} color="#525252" style={{ animation: 'spin 1s linear infinite' }} />
           </div>
         </div>
       ) : entries.length === 0 ? (
         <div className="card">
           <div className="empty-state">
-            <Calendar size={48} color="#666" style={{ marginBottom: 12, opacity: 0.5 }} />
+            <Calendar size={48} color="#525252" style={{ marginBottom: 12, opacity: 0.5 }} />
             <p>No history yet. Start logging meals!</p>
           </div>
         </div>
@@ -302,7 +305,7 @@ function HistoryView({ userId }) {
               {dayEntries.map((entry) => (
                 <div key={entry.id} style={{
                   display: 'flex', alignItems: 'center', gap: 10,
-                  padding: '8px 0', borderTop: '1px solid rgba(255,255,255,0.06)',
+                  padding: '8px 0', borderTop: '1px solid var(--border)',
                 }}>
                   {entry.photo_path && (
                     <MealPhotoThumb
@@ -317,7 +320,7 @@ function HistoryView({ userId }) {
                       {entry.meal_type?.toLowerCase()} · {entry.protein || 0}g P · {entry.carbs || 0}g C · {entry.fats || 0}g F
                     </div>
                   </div>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: '#22C55E', whiteSpace: 'nowrap', marginLeft: 12 }}>{entry.calories} kcal</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#F97316', whiteSpace: 'nowrap', marginLeft: 12 }}>{entry.calories} kcal</span>
                 </div>
               ))}
             </div>
@@ -471,23 +474,34 @@ function IntakeView({ userId, onAddEntry, autoOpenCamera, onAutoOpenCameraHandle
   return (
     <div className="view">
       <h1 className="mb-4" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <Plus size={24} color="#22C55E" />
+        <Plus size={24} color="#F97316" />
         Log Intake
       </h1>
 
       {/* Mode Toggle */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+      <div style={{
+        display: 'flex', gap: 4, marginBottom: 16, padding: 4,
+        background: 'var(--glass-bg)', borderRadius: 'var(--radius)', border: '1px solid var(--glass-border)',
+      }}>
         <button
-          className={`btn ${mode === 'scan' ? 'btn-primary' : 'btn-secondary'}`}
-          style={{ flex: 1, gap: 6 }}
+          className="btn"
+          style={{
+            flex: 1, gap: 6, borderRadius: 12,
+            background: mode === 'scan' ? 'var(--accent)' : 'transparent',
+            color: mode === 'scan' ? '#000' : 'var(--text-secondary)',
+          }}
           onClick={() => setMode('scan')}
         >
           <Camera size={16} />
           AI Photo Scan
         </button>
         <button
-          className={`btn ${mode === 'manual' ? 'btn-primary' : 'btn-secondary'}`}
-          style={{ flex: 1, gap: 6 }}
+          className="btn"
+          style={{
+            flex: 1, gap: 6, borderRadius: 12,
+            background: mode === 'manual' ? 'var(--accent)' : 'transparent',
+            color: mode === 'manual' ? '#000' : 'var(--text-secondary)',
+          }}
           onClick={() => setMode('manual')}
         >
           <Edit3 size={16} />
@@ -504,10 +518,9 @@ function IntakeView({ userId, onAddEntry, autoOpenCamera, onAutoOpenCameraHandle
           {['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK'].map((type) => (
             <button
               key={type} type="button"
-              className={`btn ${mealType === type ? 'btn-primary' : 'btn-secondary'}`}
+              className={`chip ${mealType === type ? 'active' : ''}`}
               style={{
-                padding: '8px 4px', fontSize: 12, textTransform: 'capitalize',
-                border: !mealType && submitting ? '1px solid #EF4444' : undefined,
+                border: !mealType && submitting ? '1px solid var(--danger)' : undefined,
               }}
               onClick={() => setMealType(type)}
             >
@@ -523,15 +536,8 @@ function IntakeView({ userId, onAddEntry, autoOpenCamera, onAutoOpenCameraHandle
           <div className="card">
             {/* Photo upload area */}
             {!imagePreview ? (
-              <label
-                style={{
-                  display: 'flex', flexDirection: 'column', alignItems: 'center',
-                  justifyContent: 'center', gap: 8, padding: '32px 16px',
-                  border: '2px dashed rgba(255,255,255,0.15)', borderRadius: 12,
-                  cursor: 'pointer', textAlign: 'center',
-                }}
-              >
-                <Camera size={36} color="#22C55E" />
+              <label className="upload-area">
+                <Camera size={36} color="#F97316" />
                 <span style={{ fontSize: 14, fontWeight: 500 }}>Tap to take or upload a photo</span>
                 <span className="text-muted" style={{ fontSize: 12 }}>of your meal</span>
                 <input
@@ -658,7 +664,7 @@ function IntakeView({ userId, onAddEntry, autoOpenCamera, onAutoOpenCameraHandle
                 {estimate?.items && estimate.items.length > 1 && (
                   <div style={{
                     marginTop: 12, padding: 10, borderRadius: 10,
-                    background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                    background: 'var(--glass-bg)', border: '1px solid var(--glass-border)',
                   }}>
                     <p style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.5)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                       Identified Items
@@ -876,7 +882,7 @@ function SettingsView({ goals, onSaveGoals }) {
   return (
     <div className="view">
       <h1 className="mb-4" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <Settings size={24} color="#22C55E" />
+        <Settings size={24} color="#F97316" />
         Settings
       </h1>
 
@@ -886,9 +892,9 @@ function SettingsView({ goals, onSaveGoals }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div style={{
               width: 8, height: 8, borderRadius: '50%',
-              background: caloriePct <= 100 ? '#22C55E' : '#EF4444',
+              background: caloriePct <= 100 ? '#F97316' : '#EF4444',
             }} />
-            <span style={{ fontSize: 12, color: caloriePct <= 100 ? '#22C55E' : '#EF4444' }}>
+            <span style={{ fontSize: 12, color: caloriePct <= 100 ? '#F97316' : '#EF4444' }}>
               {caloriePct}% of budget
             </span>
           </div>
@@ -913,7 +919,7 @@ function SettingsView({ goals, onSaveGoals }) {
         {/* Macro Percentage Wheel */}
         <div style={{ margin: '16px 0', textAlign: 'center' }}>
           <div style={{
-            display: 'inline-flex', gap: 4, background: '#262626',
+            display: 'inline-flex', gap: 4, background: 'rgba(255,255,255,0.06)',
             borderRadius: 20, padding: '4px 8px', marginBottom: 12,
           }}>
             {[
@@ -926,8 +932,8 @@ function SettingsView({ goals, onSaveGoals }) {
                 style={{
                   padding: '4px 12px', borderRadius: 16, border: 'none', cursor: 'pointer',
                   fontSize: 12, fontWeight: 500,
-                  background: macroMode === value ? '#22C55E' : 'transparent',
-                  color: macroMode === value ? '#000' : '#A3A3A3',
+                  background: macroMode === value ? 'var(--accent)' : 'transparent',
+                  color: macroMode === value ? '#000' : 'var(--text-secondary)',
                   transition: 'all 0.2s',
                 }}
               >
@@ -975,7 +981,7 @@ function SettingsView({ goals, onSaveGoals }) {
           ].map(({ label, value, setter, icon: Icon, color, cals }) => (
             <div key={label} style={{ textAlign: 'center' }}>
               <Icon size={14} color={color} style={{ marginBottom: 4 }} />
-              <div style={{ fontSize: 11, color: '#666', marginBottom: 4 }}>{label.split(' ')[0]}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>{label.split(' ')[0]}</div>
               <input
                 type="number"
                 className="input"
@@ -984,7 +990,7 @@ function SettingsView({ goals, onSaveGoals }) {
                 onChange={(e) => setter(e.target.value)}
                 min="0"
               />
-              <div style={{ fontSize: 10, color: '#666', marginTop: 2 }}>{cals} kcal</div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>{cals} kcal</div>
             </div>
           ))}
         </div>
@@ -1095,7 +1101,7 @@ export default function App() {
       <div className="app-container">
         <main className="main-content">
           <div className="empty-state">
-            <Loader2 size={32} color="#666" style={{ animation: 'spin 1s linear infinite' }} />
+            <Loader2 size={32} color="#525252" style={{ animation: 'spin 1s linear infinite' }} />
             <p className="text-muted" style={{ marginTop: 12 }}>Loading…</p>
           </div>
         </main>
