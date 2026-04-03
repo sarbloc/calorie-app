@@ -346,7 +346,7 @@ function HistoryView({ userId }) {
   )
 }
 
-function IntakeView({ userId, onAddEntry, autoOpenCamera, onAutoOpenCameraHandled }) {
+function IntakeView({ userId, onAddEntry, cameraPhoto, onCameraPhotoHandled }) {
   const [mode, setMode] = useState('scan') // 'scan' | 'manual'
   const [mealType, setMealType] = useState('')
   const [name, setName]     = useState('')
@@ -360,7 +360,6 @@ function IntakeView({ userId, onAddEntry, autoOpenCamera, onAutoOpenCameraHandle
   const [submitting, setSubmitting]     = useState(false)
   const [submitted, setSubmitted]       = useState(false)
   const fileInputRef = useRef(null)
-  const cameraInputRef = useRef(null)
 
   // AI estimation
   const { estimate, loading: estimating, error: estimateError, estimateCalories, clearEstimate } = useCalorieEstimate()
@@ -379,16 +378,14 @@ function IntakeView({ userId, onAddEntry, autoOpenCamera, onAutoOpenCameraHandle
     }
   }, [estimate])
 
+  // Handle photo from camera FAB
   useEffect(() => {
-    if (autoOpenCamera) {
+    if (cameraPhoto) {
       setMode('scan')
-      const timer = setTimeout(() => {
-        cameraInputRef.current?.click()
-      }, 100)
-      onAutoOpenCameraHandled()
-      return () => clearTimeout(timer)
+      setImagePreview(cameraPhoto)
+      onCameraPhotoHandled()
     }
-  }, [autoOpenCamera, onAutoOpenCameraHandled])
+  }, [cameraPhoto, onCameraPhotoHandled])
 
   const handleImageUpload = (e) => {
     const file = e.target.files?.[0]
@@ -529,14 +526,6 @@ function IntakeView({ userId, onAddEntry, autoOpenCamera, onAutoOpenCameraHandle
           ))}
         </div>
       </div>
-
-      {/* Hidden camera input — used by the camera FAB for direct capture */}
-      <input
-        ref={cameraInputRef}
-        type="file" accept="image/*" capture="environment"
-        onChange={handleImageUpload}
-        style={{ display: 'none' }}
-      />
 
       {mode === 'scan' ? (
         /* ── AI Photo Scan Mode ── */
@@ -1093,15 +1082,41 @@ export default function App() {
   const goals  = useGoals(userId)
 
   const [currentView, setCurrentView] = useState('dashboard')
-  const [autoOpenCamera, setAutoOpenCamera] = useState(false)
+  const [cameraPhoto, setCameraPhoto] = useState(null)
+  const cameraInputRef = useRef(null)
 
-  const handleAutoOpenCameraHandled = useCallback(() => {
-    setAutoOpenCamera(false)
+  const handleCameraPhotoHandled = useCallback(() => {
+    setCameraPhoto(null)
+  }, [])
+
+  const handleCameraCapture = useCallback((e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ''
+
+    const img = new Image()
+    img.onload = () => {
+      const MAX = 1000
+      let { width, height } = img
+      if (width > MAX || height > MAX) {
+        const scale = MAX / Math.max(width, height)
+        width = Math.round(width * scale)
+        height = Math.round(height * scale)
+      }
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height)
+      const resized = canvas.toDataURL('image/jpeg', 0.8)
+      setCameraPhoto(resized)
+      setCurrentView('intake')
+      URL.revokeObjectURL(img.src)
+    }
+    img.src = URL.createObjectURL(file)
   }, [])
 
   const handleCameraFab = useCallback(() => {
-    setCurrentView('intake')
-    setAutoOpenCamera(true)
+    cameraInputRef.current?.click()
   }, [])
 
   if (loading) {
@@ -1131,7 +1146,7 @@ export default function App() {
     switch (currentView) {
       case 'dashboard': return <DashboardView user={user} meals={meals}  goals={goals} />
       case 'history':   return <HistoryView   userId={userId} />
-      case 'intake':     return <IntakeView    userId={userId} onAddEntry={meals.addMeal} autoOpenCamera={autoOpenCamera} onAutoOpenCameraHandled={handleAutoOpenCameraHandled} />
+      case 'intake':     return <IntakeView    userId={userId} onAddEntry={meals.addMeal} cameraPhoto={cameraPhoto} onCameraPhotoHandled={handleCameraPhotoHandled} />
       case 'settings':   return <SettingsView  goals={goals.goals} onSaveGoals={goals.saveGoals} />
       default:           return <DashboardView user={user} meals={meals} goals={goals} />
     }
@@ -1149,6 +1164,12 @@ export default function App() {
   return (
     <div className="app-container">
       <div className="bg-blobs" aria-hidden="true" />
+      <input
+        ref={cameraInputRef}
+        type="file" accept="image/*" capture="environment"
+        onChange={handleCameraCapture}
+        style={{ display: 'none' }}
+      />
       <style>{`
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
