@@ -360,6 +360,7 @@ function IntakeView({ userId, onAddEntry, autoOpenCamera, onAutoOpenCameraHandle
   const [submitting, setSubmitting]     = useState(false)
   const [submitted, setSubmitted]       = useState(false)
   const fileInputRef = useRef(null)
+  const cameraInputRef = useRef(null)
 
   // AI estimation
   const { estimate, loading: estimating, error: estimateError, estimateCalories, clearEstimate } = useCalorieEstimate()
@@ -368,7 +369,6 @@ function IntakeView({ userId, onAddEntry, autoOpenCamera, onAutoOpenCameraHandle
   const [scanProtein, setScanProtein]   = useState('')
   const [scanCarbs, setScanCarbs]       = useState('')
   const [scanFat, setScanFat]           = useState('')
-
   useEffect(() => {
     if (estimate) {
       setScanName(estimate.name || 'AI Photo Scan')
@@ -382,9 +382,8 @@ function IntakeView({ userId, onAddEntry, autoOpenCamera, onAutoOpenCameraHandle
   useEffect(() => {
     if (autoOpenCamera) {
       setMode('scan')
-      // Small delay to ensure the file input is rendered
       const timer = setTimeout(() => {
-        fileInputRef.current?.click()
+        cameraInputRef.current?.click()
       }, 100)
       onAutoOpenCameraHandled()
       return () => clearTimeout(timer)
@@ -394,6 +393,7 @@ function IntakeView({ userId, onAddEntry, autoOpenCamera, onAutoOpenCameraHandle
   const handleImageUpload = (e) => {
     const file = e.target.files?.[0]
     if (!file) return
+    e.target.value = ''
     setUploading(true)
     clearEstimate()
     setScanName(''); setScanCalories(''); setScanProtein(''); setScanCarbs(''); setScanFat('')
@@ -529,6 +529,14 @@ function IntakeView({ userId, onAddEntry, autoOpenCamera, onAutoOpenCameraHandle
           ))}
         </div>
       </div>
+
+      {/* Hidden camera input — used by the camera FAB for direct capture */}
+      <input
+        ref={cameraInputRef}
+        type="file" accept="image/*" capture="environment"
+        onChange={handleImageUpload}
+        style={{ display: 'none' }}
+      />
 
       {mode === 'scan' ? (
         /* ── AI Photo Scan Mode ── */
