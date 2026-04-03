@@ -406,3 +406,53 @@ body {
   font-size: 14px;
   color: var(--text-secondary);
 }
+
+/* Meal Photo Thumbnail */
+.meal-photo-thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  flex-shrink: 0;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  transition: opacity 0.2s;
+}
+
+.meal-photo-thumb:hover {
+  opacity: 0.8;
+}
+
+/* Photo Preview Overlay */
+.meal-photo-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.meal-photo-preview-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.meal-photo-preview {
+  max-width: 100%;
+  max-height: calc(100vh - 120px);
+  border-radius: var(--radius);
+  object-fit: contain;
+}
+
+.meal-photo-close {
+  padding: 8px 16px;
+  font-size: 13px;
+  gap: 6px;
+}

@@ -9,6 +9,37 @@ function todayStr() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
+/**
+ * Convert a base64 data URL to a Blob suitable for upload.
+ */
+function base64ToBlob(dataUrl) {
+  const [header, base64] = dataUrl.split(',')
+  const mimeMatch = header.match(/:(.*?);/)
+  const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg'
+  const binary = atob(base64)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i)
+  }
+  return new Blob([bytes], { type: mime })
+}
+
+/**
+ * Get a signed URL for a meal photo stored in the meal_photos bucket.
+ * Returns null if the path is falsy or the request fails.
+ */
+export async function getMealPhotoUrl(photoPath) {
+  if (!photoPath || !isSupabaseConfigured) return null
+  const { data, error } = await supabase.storage
+    .from('meal_photos')
+    .createSignedUrl(photoPath, 3600)
+  if (error) {
+    console.error('[getMealPhotoUrl] Failed to create signed URL:', error.message)
+    return null
+  }
+  return data?.signedUrl ?? null
+}
+
 export function useMeals(userId) {
   const [entries, setEntries] = useState([])
   const [totals, setTotals] = useState({ total_calories: 0, total_protein: 0, total_carbs: 0, total_fat: 0 })
@@ -52,32 +83,76 @@ export function useMeals(userId) {
     fetchMeals()
   }, [fetchMeals])
 
-  const addMeal = async ({ name, calories, protein, carbs, fat, mealType = 'SNACK' }) => {
+  const addMeal = async ({ name, calories, protein, carbs, fat, mealType = 'SNACK', photoBase64 = null }) => {
     if (!isSupabaseConfigured || !userId) return { error: 'Not configured' }
 
+    // Insert the meal first (without photo_path)
     const { data, error } = await supabase
       .from('meals')
       .insert([{ user_id: userId, description: name, meal_type: mealType, calories, protein, carbs, fats: fat }])
       .select()
       .single()
 
-    if (!error) {
-      setEntries(prev => [data, ...prev])
-      setTotals(prev => ({
-        total_calories: prev.total_calories + (calories || 0),
-        total_protein: prev.total_protein + (protein || 0),
-        total_carbs: prev.total_carbs + (carbs || 0),
-        total_fat: prev.total_fat + (fat || 0),
-      }))
+    if (error) return { data, error }
+
+    // Optimistically add to local state immediately so UI feels fast
+    setEntries(prev => [data, ...prev])
+    setTotals(prev => ({
+      total_calories: prev.total_calories + (calories || 0),
+      total_protein: prev.total_protein + (protein || 0),
+      total_carbs: prev.total_carbs + (carbs || 0),
+      total_fat: prev.total_fat + (fat || 0),
+    }))
+
+    // Upload photo in background if provided
+    if (photoBase64 && data?.id) {
+      try {
+        const blob = base64ToBlob(photoBase64)
+        const photoPath = `${userId}/${data.id}.jpg`
+
+        const { error: uploadError } = await supabase.storage
+          .from('meal_photos')
+          .upload(photoPath, blob, { contentType: 'image/jpeg', upsert: false })
+
+        if (uploadError) {
+          console.error('[addMeal] Photo upload failed:', uploadError.message)
+        } else {
+          // Update the meal record with the photo path
+          const { error: updateError } = await supabase
+            .from('meals')
+            .update({ photo_path: photoPath })
+            .eq('id', data.id)
+
+          if (updateError) {
+            console.error('[addMeal] Failed to save photo_path:', updateError.message)
+          } else {
+            // Update local state with photo_path
+            setEntries(prev => prev.map(e => e.id === data.id ? { ...e, photo_path: photoPath } : e))
+          }
+        }
+      } catch (err) {
+        console.error('[addMeal] Photo processing error:', err)
+      }
     }
 
-    return { data, error }
+    return { data, error: null }
   }
 
   const deleteMeal = async (id) => {
     if (!isSupabaseConfigured || !userId) return { error: 'Not configured' }
 
     const entry = entries.find(e => e.id === id)
+
+    // Delete photo from storage if it exists
+    if (entry?.photo_path) {
+      const { error: storageError } = await supabase.storage
+        .from('meal_photos')
+        .remove([entry.photo_path])
+      if (storageError) {
+        console.error('[deleteMeal] Failed to delete photo:', storageError.message)
+      }
+    }
+
     const { error } = await supabase.from('meals').delete().eq('id', id).eq('user_id', userId)
 
     if (!error && entry) {
