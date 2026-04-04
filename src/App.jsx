@@ -6,7 +6,7 @@ import { useGoals } from './hooks/useGoals'
 import { useCalorieEstimate } from './hooks/useCalorieEstimate'
 import LoginView from './views/LoginView'
 import {
-  LayoutDashboard, Plus, Calendar, Settings,
+  LayoutDashboard, UtensilsCrossed, Calendar, Settings,
   PartyPopper, Target, Flame, Egg, Wheat, Droplets,
   Camera, Edit3, Trash2, Check, X, Loader2, Sparkles
 } from 'lucide-react'
@@ -1157,7 +1157,7 @@ export default function App() {
     { key: 'history',   icon: Calendar,        label: 'History'   },
   ]
   const rightNav = [
-    { key: 'intake',    icon: Plus,            label: 'Log'       },
+    { key: 'intake',    icon: UtensilsCrossed,  label: 'Log'       },
     { key: 'settings',  icon: Settings,        label: 'Settings'  },
   ]
 
@@ -1181,9 +1181,9 @@ export default function App() {
             key={key}
             className={`nav-item ${currentView === key ? 'active' : ''}`}
             onClick={() => setCurrentView(key)}
+            aria-label={label}
           >
-            <Icon size={20} />
-            <span>{label}</span>
+            <Icon size={22} />
           </button>
         ))}
         <button
@@ -1198,9 +1198,9 @@ export default function App() {
             key={key}
             className={`nav-item ${currentView === key ? 'active' : ''}`}
             onClick={() => setCurrentView(key)}
+            aria-label={label}
           >
-            <Icon size={20} />
-            <span>{label}</span>
+            <Icon size={22} />
           </button>
         ))}
       </nav>
