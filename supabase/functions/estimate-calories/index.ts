@@ -1,13 +1,13 @@
 // Supabase Edge Function: Estimate Calories
-// Calls NVIDIA's Kimi K2.5 API for nutrition estimation (image + text or text-only)
+// Calls Anthropic's Claude Sonnet 4.6 for nutrition estimation (image + text or text-only)
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const NVIDIA_API_KEY = Deno.env.get('NVIDIA_API_KEY')
+const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')
 
-const NVIDIA_URL = 'https://integrate.api.nvidia.com/v1/chat/completions'
+const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -27,8 +27,8 @@ Deno.serve(async (req) => {
   }
 
   try {
-    if (!NVIDIA_API_KEY) {
-      console.error('NVIDIA_API_KEY is not set')
+    if (!ANTHROPIC_API_KEY) {
+      console.error('ANTHROPIC_API_KEY is not set')
       return jsonResponse({ error: 'Server configuration error' }, 500)
     }
 
@@ -74,46 +74,65 @@ Deno.serve(async (req) => {
       'All numeric values must be integers. Calories in kcal, protein/carbs/fat in grams.',
     ].join('\n')
 
-    // Build user content conditionally
+    // Build user content conditionally (Anthropic native format)
     const userContent: Array<Record<string, unknown>> = []
     if (message) {
       userContent.push({ type: 'text', text: message })
     }
     if (image) {
-      userContent.push({ type: 'image_url', image_url: { url: image } })
+      // image is a data URL like "data:image/jpeg;base64,..."
+      const match = image.match(/^data:(image\/\w+);base64,(.+)$/)
+      if (match) {
+        userContent.push({
+          type: 'image',
+          source: {
+            type: 'base64',
+            media_type: match[1],
+            data: match[2],
+          },
+        })
+      } else {
+        // Fallback: assume raw base64 JPEG
+        userContent.push({
+          type: 'image',
+          source: {
+            type: 'base64',
+            media_type: 'image/jpeg',
+            data: image,
+          },
+        })
+      }
     }
 
-    const res = await fetch(NVIDIA_URL, {
+    const res = await fetch(ANTHROPIC_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${NVIDIA_API_KEY}`,
-        'Accept': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'moonshotai/kimi-k2.5',
+        model: 'claude-sonnet-4-6',
+        system: systemMessage,
         messages: [
-          { role: 'system', content: systemMessage },
           { role: 'user', content: userContent },
         ],
         max_tokens: 2048,
         temperature: 0.3,
-        top_p: 1.0,
-        stream: false,
       }),
     })
 
     if (!res.ok) {
       const text = await res.text()
-      console.error(`NVIDIA API returned ${res.status}: ${text}`)
+      console.error(`Anthropic API returned ${res.status}: ${text}`)
       return jsonResponse({ error: `Estimation failed: ${res.status}`, detail: text }, 502)
     }
 
     const data = await res.json()
-    const reply = data.choices?.[0]?.message?.content || ''
-    const finishReason = data.choices?.[0]?.finish_reason || 'unknown'
+    const reply = data.content?.[0]?.text || ''
+    const stopReason = data.stop_reason || 'unknown'
     console.log('AI response (first 500):', reply.substring(0, 500))
-    console.log('Finish reason:', finishReason)
+    console.log('Stop reason:', stopReason)
     return jsonResponse({ reply })
   } catch (error) {
     console.error('Estimate calories error:', error)
