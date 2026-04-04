@@ -9,7 +9,8 @@ import LoginView from './views/LoginView'
 import {
   LayoutDashboard, Plus, UtensilsCrossed, Calendar, Settings,
   PartyPopper, Target, Flame, Egg, Wheat, Droplets,
-  Camera, Edit3, Trash2, Check, X, Loader2, Sparkles, TrendingUp
+  Camera, Edit3, Trash2, Check, X, Loader2, Sparkles, TrendingUp,
+  ArrowLeft, Clock
 } from 'lucide-react'
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
@@ -134,7 +135,7 @@ function PhotoPreviewModal({ url, onClose }) {
 
 // ─── Sub-views ───────────────────────────────────────────────────────────────
 
-function DashboardView({ user, meals, goals }) {
+function DashboardView({ user, meals, goals, onSelectMeal }) {
   const { entries, totals } = meals
   const { goals: g } = goals
   const [previewUrl, setPreviewUrl] = useState(null)
@@ -206,7 +207,7 @@ function DashboardView({ user, meals, goals }) {
         </span>
         {entries.length > 0 ? (
           entries.map((entry) => (
-            <div key={entry.id} className="food-entry">
+            <div key={entry.id} className="food-entry" onClick={() => onSelectMeal?.(entry)} style={{ cursor: 'pointer' }}>
               {entry.photo_path && (
                 <MealPhotoThumb
                   photoPath={entry.photo_path}
@@ -232,7 +233,7 @@ function DashboardView({ user, meals, goals }) {
   )
 }
 
-function HistoryView({ userId }) {
+function HistoryView({ userId, onSelectMeal }) {
   const PAGE_SIZE = 20
   const [entries, setEntries] = useState([])
   const [loading, setLoading] = useState(true)
@@ -309,9 +310,9 @@ function HistoryView({ userId }) {
                 <span className="text-accent">{totalCals} kcal</span>
               </div>
               {dayEntries.map((entry) => (
-                <div key={entry.id} style={{
+                <div key={entry.id} onClick={() => onSelectMeal?.(entry)} style={{
                   display: 'flex', alignItems: 'center', gap: 10,
-                  padding: '8px 0', borderTop: '1px solid var(--border)',
+                  padding: '8px 0', borderTop: '1px solid var(--border)', cursor: 'pointer',
                 }}>
                   {entry.photo_path && (
                     <MealPhotoThumb
@@ -348,6 +349,145 @@ function HistoryView({ userId }) {
         </>
       )}
       <PhotoPreviewModal url={previewUrl} onClose={() => setPreviewUrl(null)} />
+    </div>
+  )
+}
+
+// ─── Meal Detail View ───────────────────────────────────────────────────────
+
+function MealDetailView({ meal, onBack }) {
+  const [photoUrl, setPhotoUrl] = useState(null)
+
+  useEffect(() => {
+    if (!meal?.photo_path) return
+    getMealPhotoUrl(meal.photo_path).then(u => { if (u) setPhotoUrl(u) })
+  }, [meal?.photo_path])
+
+  if (!meal) return null
+
+  // items_json may be a string or already-parsed array
+  let items = null
+  if (meal.items_json) {
+    if (typeof meal.items_json === 'string') {
+      try { items = JSON.parse(meal.items_json) } catch { items = null }
+    } else if (Array.isArray(meal.items_json)) {
+      items = meal.items_json
+    }
+  }
+
+  return (
+    <div className="view">
+      <button className="meal-detail-back" onClick={onBack}>
+        <ArrowLeft size={18} />
+        Back
+      </button>
+
+      {/* Meal photo */}
+      {photoUrl && (
+        <img
+          src={photoUrl}
+          alt={meal.name || meal.description || 'Meal photo'}
+          style={{ width: '100%', borderRadius: 12, maxHeight: 300, objectFit: 'cover', marginBottom: 16 }}
+        />
+      )}
+
+      {/* Name + meal type badge */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+        <h2 style={{ fontSize: 22, fontWeight: 800, flex: 1 }}>{meal.name || meal.description}</h2>
+        {meal.meal_type && (
+          <span className="meal-type-badge">{meal.meal_type.toLowerCase()}</span>
+        )}
+      </div>
+
+      {/* Timestamp */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 16 }}>
+        <Clock size={14} color="var(--text-muted)" />
+        <span className="text-muted" style={{ fontSize: 13 }}>
+          {new Date(meal.created_at).toLocaleString()}
+        </span>
+      </div>
+
+      {/* Total macros card */}
+      <div className="card">
+        <span className="card-title" style={{ marginBottom: 12, display: 'block' }}>
+          <Target size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} />
+          Nutrition
+        </span>
+        <div className="macro-detail-grid">
+          <div className="macro-detail-item">
+            <Flame size={18} color={ACCENT} />
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: ACCENT }}>{meal.calories || 0}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>kcal</div>
+            </div>
+          </div>
+          <div className="macro-detail-item">
+            <Egg size={18} color={MACRO_COLORS.protein} />
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: MACRO_COLORS.protein }}>{meal.protein || 0}g</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Protein</div>
+            </div>
+          </div>
+          <div className="macro-detail-item">
+            <Wheat size={18} color={MACRO_COLORS.carbs} />
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: MACRO_COLORS.carbs }}>{meal.carbs || 0}g</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Carbs</div>
+            </div>
+          </div>
+          <div className="macro-detail-item">
+            <Droplets size={18} color={MACRO_COLORS.fat} />
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: MACRO_COLORS.fat }}>{meal.fats || 0}g</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Fat</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Description */}
+      {meal.description && meal.name && meal.description !== meal.name && (
+        <div className="card">
+          <span className="card-title" style={{ marginBottom: 8, display: 'block' }}>
+            <Edit3 size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} />
+            Ingredients
+          </span>
+          <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+            {meal.description}
+          </p>
+        </div>
+      )}
+
+      {/* Per-item breakdown */}
+      {items && items.length > 0 && (
+        <div className="card">
+          <span className="card-title" style={{ marginBottom: 10, display: 'block' }}>
+            <UtensilsCrossed size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} />
+            Item Breakdown
+          </span>
+          {items.map((item, i) => (
+            <div key={i} style={{
+              padding: '10px 0',
+              borderTop: i > 0 ? '1px solid var(--border)' : 'none',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <span style={{ fontSize: 14, fontWeight: 600 }}>{item.name}</span>
+                  {item.portion && (
+                    <span style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 6 }}>({item.portion})</span>
+                  )}
+                </div>
+                <span style={{ fontSize: 13, fontWeight: 600, color: ACCENT, whiteSpace: 'nowrap' }}>
+                  {item.calories} kcal
+                </span>
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+                {item.protein || 0}g P · {item.carbs || 0}g C · {item.fat || 0}g F
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -1196,7 +1336,18 @@ export default function App() {
 
   const [currentView, setCurrentView] = useState('dashboard')
   const [cameraPhoto, setCameraPhoto] = useState(null)
+  const [selectedMeal, setSelectedMeal] = useState(null)
   const cameraInputRef = useRef(null)
+
+  const navigateToMealDetail = useCallback((meal, fromView) => {
+    setSelectedMeal({ ...meal, _fromView: fromView })
+    setCurrentView('meal-detail')
+  }, [])
+
+  const navigateBack = useCallback(() => {
+    setCurrentView(selectedMeal?._fromView || 'dashboard')
+    setSelectedMeal(null)
+  }, [selectedMeal])
 
   const handleCameraPhotoHandled = useCallback(() => {
     setCameraPhoto(null)
@@ -1257,12 +1408,13 @@ export default function App() {
 
   const renderView = () => {
     switch (currentView) {
-      case 'dashboard': return <DashboardView user={user} meals={meals}  goals={goals} />
-      case 'trends':    return <TrendsView   userId={userId} goals={goals.goals} onViewHistory={() => setCurrentView('history')} />
-      case 'history':   return <HistoryView   userId={userId} />
-      case 'intake':     return <IntakeView    userId={userId} onAddEntry={meals.addMeal} cameraPhoto={cameraPhoto} onCameraPhotoHandled={handleCameraPhotoHandled} />
-      case 'settings':   return <SettingsView  goals={goals.goals} onSaveGoals={goals.saveGoals} />
-      default:           return <DashboardView user={user} meals={meals} goals={goals} />
+      case 'dashboard':   return <DashboardView user={user} meals={meals} goals={goals} onSelectMeal={(meal) => navigateToMealDetail(meal, 'dashboard')} />
+      case 'trends':      return <TrendsView userId={userId} goals={goals.goals} onViewHistory={() => setCurrentView('history')} />
+      case 'history':     return <HistoryView userId={userId} onSelectMeal={(meal) => navigateToMealDetail(meal, 'history')} />
+      case 'intake':      return <IntakeView userId={userId} onAddEntry={meals.addMeal} cameraPhoto={cameraPhoto} onCameraPhotoHandled={handleCameraPhotoHandled} />
+      case 'settings':    return <SettingsView goals={goals.goals} onSaveGoals={goals.saveGoals} />
+      case 'meal-detail': return <MealDetailView meal={selectedMeal} onBack={navigateBack} />
+      default:            return <DashboardView user={user} meals={meals} goals={goals} onSelectMeal={(meal) => navigateToMealDetail(meal, 'dashboard')} />
     }
   }
 
@@ -1289,35 +1441,37 @@ export default function App() {
       `}</style>
       <main className="main-content">{renderView()}</main>
 
-      <nav className="nav-bar">
-        {leftNav.map(({ key, icon: Icon, label }) => (
+      {currentView !== 'meal-detail' && (
+        <nav className="nav-bar">
+          {leftNav.map(({ key, icon: Icon, label }) => (
+            <button
+              key={key}
+              className={`nav-item ${currentView === key ? 'active' : ''}`}
+              onClick={() => setCurrentView(key)}
+              aria-label={label}
+            >
+              <Icon size={22} />
+            </button>
+          ))}
           <button
-            key={key}
-            className={`nav-item ${currentView === key ? 'active' : ''}`}
-            onClick={() => setCurrentView(key)}
-            aria-label={label}
+            className="nav-camera-btn"
+            onClick={handleCameraFab}
+            aria-label="Scan food with camera"
           >
-            <Icon size={22} />
+            <Camera size={26} />
           </button>
-        ))}
-        <button
-          className="nav-camera-btn"
-          onClick={handleCameraFab}
-          aria-label="Scan food with camera"
-        >
-          <Camera size={26} />
-        </button>
-        {rightNav.map(({ key, icon: Icon, label }) => (
-          <button
-            key={key}
-            className={`nav-item ${currentView === key ? 'active' : ''}`}
-            onClick={() => setCurrentView(key)}
-            aria-label={label}
-          >
-            <Icon size={22} />
-          </button>
-        ))}
-      </nav>
+          {rightNav.map(({ key, icon: Icon, label }) => (
+            <button
+              key={key}
+              className={`nav-item ${currentView === key ? 'active' : ''}`}
+              onClick={() => setCurrentView(key)}
+              aria-label={label}
+            >
+              <Icon size={22} />
+            </button>
+          ))}
+        </nav>
+      )}
     </div>
   )
 }
