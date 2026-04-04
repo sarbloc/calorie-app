@@ -3,14 +3,18 @@ import { useAuth } from './contexts/AuthContext'
 import { supabase, isSupabaseConfigured } from './lib/supabase'
 import { useMeals, getMealPhotoUrl } from './hooks/useMeals'
 import { useGoals } from './hooks/useGoals'
+import { useWeeklyTrends } from './hooks/useWeeklyTrends'
 import { useCalorieEstimate } from './hooks/useCalorieEstimate'
 import LoginView from './views/LoginView'
 import {
   LayoutDashboard, Plus, UtensilsCrossed, Calendar, Settings,
   PartyPopper, Target, Flame, Egg, Wheat, Droplets,
-  Camera, Edit3, Trash2, Check, X, Loader2, Sparkles
+  Camera, Edit3, Trash2, Check, X, Loader2, Sparkles, TrendingUp
 } from 'lucide-react'
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
+import {
+  PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
+  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, ReferenceLine, Legend,
+} from 'recharts'
 
 // ─── Macro Colors ──────────────────────────────────────────────────────────
 const MACRO_COLORS = {
@@ -20,6 +24,15 @@ const MACRO_COLORS = {
 }
 
 const ACCENT = '#F97316'
+
+const CHART_TOOLTIP_STYLE = {
+  background: 'rgba(20, 20, 20, 0.95)',
+  backdropFilter: 'blur(12px)',
+  border: '1px solid rgba(255,255,255,0.1)',
+  borderRadius: 10,
+  fontSize: 13,
+  color: '#F5F5F5',
+}
 
 function MacroDonutChart({ totals, goals }) {
   const protein = totals.total_protein || 0
@@ -62,14 +75,7 @@ function MacroDonutChart({ totals, goals }) {
               ))}
             </Pie>
             <Tooltip
-              contentStyle={{
-                background: 'rgba(20, 20, 20, 0.95)',
-                backdropFilter: 'blur(12px)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: 10,
-                fontSize: 13,
-                color: '#F5F5F5',
-              }}
+              contentStyle={CHART_TOOLTIP_STYLE}
               formatter={(value, name) => [`${value}g`, name]}
             />
           </PieChart>
@@ -1072,6 +1078,109 @@ function SettingsView({ goals, onSaveGoals }) {
   )
 }
 
+// ─── Trends View ────────────────────────────────────────────────────────────
+
+function TrendsView({ userId, goals, onViewHistory }) {
+  const { data, loading, error, refetch } = useWeeklyTrends(userId)
+  const calorieGoal = goals?.calorie_goal || 2000
+
+  if (loading) {
+    return (
+      <div className="view">
+        <h1 className="mb-4" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <TrendingUp size={24} color={ACCENT} />
+          Weekly Trends
+        </h1>
+        <div className="card">
+          <div className="empty-state">
+            <Loader2 size={32} color="#525252" style={{ animation: 'spin 1s linear infinite' }} />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const hasData = data.some(d => d.calories > 0)
+
+  if (!hasData) {
+    return (
+      <div className="view">
+        <h1 className="mb-4" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <TrendingUp size={24} color={ACCENT} />
+          Weekly Trends
+        </h1>
+        <div className="card">
+          <div className="empty-state">
+            <TrendingUp size={48} color="#525252" style={{ marginBottom: 12, opacity: 0.5 }} />
+            <p>Not enough data yet. Start logging meals!</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="view">
+      <h1 className="mb-4" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <TrendingUp size={24} color={ACCENT} />
+        Weekly Trends
+      </h1>
+
+      {/* Calorie Trend */}
+      <div className="card glow-accent">
+        <span className="card-title">
+          <Flame size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} />
+          Calorie Trend
+        </span>
+        <div className="chart-wrapper">
+          <ResponsiveContainer width="100%" height={220}>
+            <LineChart data={data} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+              <XAxis dataKey="label" tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={CHART_TOOLTIP_STYLE} formatter={(value) => [`${value} kcal`, 'Calories']} />
+              <ReferenceLine y={calorieGoal} stroke="#22C55E" strokeDasharray="6 4" label={{ value: 'Goal', fill: '#22C55E', fontSize: 11, position: 'right' }} />
+              <Line type="monotone" dataKey="calories" stroke={ACCENT} strokeWidth={2} dot={{ fill: ACCENT, r: 3 }} activeDot={{ r: 5 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Macros Breakdown */}
+      <div className="card">
+        <span className="card-title">
+          <Target size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} />
+          Macros Breakdown
+        </span>
+        <div className="chart-wrapper">
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={data} margin={{ top: 10, right: 10, left: -10, bottom: 0 }} barSize={20}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+              <XAxis dataKey="label" tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={CHART_TOOLTIP_STYLE} formatter={(value, name) => [`${value}g`, name]} />
+              <Legend wrapperStyle={{ fontSize: 12, color: 'var(--text-secondary)' }} />
+              <Bar dataKey="protein" name="Protein" stackId="macros" fill={MACRO_COLORS.protein} />
+              <Bar dataKey="carbs" name="Carbs" stackId="macros" fill={MACRO_COLORS.carbs} />
+              <Bar dataKey="fat" name="Fat" stackId="macros" fill={MACRO_COLORS.fat} radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* View full history link */}
+      <button
+        className="btn btn-secondary"
+        style={{ width: '100%', gap: 6, marginTop: 4 }}
+        onClick={onViewHistory}
+      >
+        <Calendar size={16} />
+        View full history
+      </button>
+    </div>
+  )
+}
+
 // ─── App ──────────────────────────────────────────────────────────────────────
 
 export default function App() {
@@ -1145,6 +1254,7 @@ export default function App() {
   const renderView = () => {
     switch (currentView) {
       case 'dashboard': return <DashboardView user={user} meals={meals}  goals={goals} />
+      case 'trends':    return <TrendsView   userId={userId} goals={goals.goals} onViewHistory={() => setCurrentView('history')} />
       case 'history':   return <HistoryView   userId={userId} />
       case 'intake':     return <IntakeView    userId={userId} onAddEntry={meals.addMeal} cameraPhoto={cameraPhoto} onCameraPhotoHandled={handleCameraPhotoHandled} />
       case 'settings':   return <SettingsView  goals={goals.goals} onSaveGoals={goals.saveGoals} />
@@ -1154,7 +1264,7 @@ export default function App() {
 
   const leftNav = [
     { key: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { key: 'history',   icon: Calendar,        label: 'History'   },
+    { key: 'trends',    icon: TrendingUp,      label: 'Trends'    },
   ]
   const rightNav = [
     { key: 'intake',    icon: UtensilsCrossed,  label: 'Log'       },

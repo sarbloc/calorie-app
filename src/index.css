@@ -772,3 +772,7 @@ h1 {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
 }
+
+/* ── Chart Wrapper ── */
+.chart-wrapper { margin: 12px -4px 0; }
+.chart-wrapper .recharts-text { fill: var(--text-muted); font-size: 11px; }
