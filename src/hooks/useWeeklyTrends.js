@@ -35,8 +35,14 @@ export function useWeeklyTrends(userId) {
     const startDate = new Date(today)
     startDate.setDate(today.getDate() - 6) // 6 days ago + today = 7 days
 
-    const startStr = `${formatDateStr(startDate)}T00:00:00`
-    const endStr = `${formatDateStr(today)}T23:59:59.999999`
+    // Build timezone-aware strings so Supabase filters by local midnight, not UTC
+    const tzOffset = -today.getTimezoneOffset()
+    const sign = tzOffset >= 0 ? '+' : '-'
+    const hh = String(Math.floor(Math.abs(tzOffset) / 60)).padStart(2, '0')
+    const mm = String(Math.abs(tzOffset) % 60).padStart(2, '0')
+    const tz = `${sign}${hh}:${mm}`
+    const startStr = `${formatDateStr(startDate)}T00:00:00${tz}`
+    const endStr = `${formatDateStr(today)}T23:59:59.999999${tz}`
 
     const { data: rows, error: fetchError } = await supabase
       .from('meals')
