@@ -1,2 +1,5 @@
 [functions.telegram-auth]
 verify_jwt = false
+
+[functions.estimate-calories]
+verify_jwt = false
