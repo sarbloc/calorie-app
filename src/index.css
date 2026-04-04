@@ -177,6 +177,7 @@ body {
   border: none;
   background: none;
   transition: color 0.2s;
+  touch-action: manipulation;
 }
 
 .nav-item.active {
@@ -203,6 +204,7 @@ body {
     0 4px 16px var(--accent-glow),
     0 0 40px rgba(249, 115, 22, 0.15);
   transition: transform 0.2s, box-shadow 0.2s;
+  touch-action: manipulation;
 }
 
 .nav-camera-btn:active {
