@@ -4,13 +4,14 @@ import { supabase, isSupabaseConfigured } from './lib/supabase'
 import { useMeals, getMealPhotoUrl } from './hooks/useMeals'
 import { useGoals } from './hooks/useGoals'
 import { useWeeklyTrends } from './hooks/useWeeklyTrends'
+import { useMealHistory } from './hooks/useMealHistory'
 import { useCalorieEstimate } from './hooks/useCalorieEstimate'
 import LoginView from './views/LoginView'
 import {
   LayoutDashboard, Plus, UtensilsCrossed, Calendar, Settings,
   PartyPopper, Target, Flame, Egg, Wheat, Droplets,
   Camera, Edit3, Trash2, Check, X, Loader2, Sparkles, TrendingUp,
-  ArrowLeft, Clock
+  ArrowLeft, Clock, History, Search
 } from 'lucide-react'
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
@@ -493,7 +494,10 @@ function MealDetailView({ meal, onBack }) {
 }
 
 function IntakeView({ userId, onAddEntry, cameraPhoto, onCameraPhotoHandled }) {
-  const [mode, setMode] = useState('scan') // 'scan' | 'manual'
+  const [mode, setMode] = useState('scan') // 'scan' | 'manual' | 'quick'
+  const [searchQuery, setSearchQuery] = useState('')
+  const { uniqueMeals, loading: historyLoading, refetch: refetchHistory } = useMealHistory(userId)
+  const filteredMeals = uniqueMeals.filter(m => m.name.toLowerCase().includes(searchQuery.toLowerCase()))
   const [mealType, setMealType] = useState('')
   const [name, setName]     = useState('')
   const [calories, setCalories] = useState('')
@@ -590,12 +594,23 @@ function IntakeView({ userId, onAddEntry, cameraPhoto, onCameraPhotoHandled }) {
     setImagePreview(null); setDescription(''); clearEstimate(); setMealType('')
     setSubmitted(true)
     setSubmitting(false)
+    refetchHistory()
     setTimeout(() => setSubmitted(false), 2000)
   }
 
   const handleClearScan = () => {
     setImagePreview(null); setDescription(''); clearEstimate()
     setScanName(''); setScanCalories(''); setScanProtein(''); setScanCarbs(''); setScanFat('')
+  }
+
+  const handleQuickSelect = (meal) => {
+    setName(meal.name)
+    setCalories(String(meal.calories || ''))
+    setProtein(String(meal.protein || ''))
+    setCarbs(String(meal.carbs || ''))
+    setFat(String(meal.fats || ''))
+    if (meal.mealType) setMealType(meal.mealType)
+    setMode('manual')
   }
 
   const handleManualSubmit = async (e) => {
@@ -615,6 +630,7 @@ function IntakeView({ userId, onAddEntry, cameraPhoto, onCameraPhotoHandled }) {
     setName(''); setCalories(''); setProtein(''); setCarbs(''); setFat(''); setMealType('')
     setSubmitted(true)
     setSubmitting(false)
+    refetchHistory()
     setTimeout(() => setSubmitted(false), 2000)
   }
 
@@ -654,6 +670,18 @@ function IntakeView({ userId, onAddEntry, cameraPhoto, onCameraPhotoHandled }) {
           <Edit3 size={16} />
           Manual Entry
         </button>
+        <button
+          className="btn"
+          style={{
+            flex: 1, gap: 6, borderRadius: 12,
+            background: mode === 'quick' ? 'var(--accent)' : 'transparent',
+            color: mode === 'quick' ? '#000' : 'var(--text-secondary)',
+          }}
+          onClick={() => setMode('quick')}
+        >
+          <History size={16} />
+          Quick Add
+        </button>
       </div>
 
       {/* Meal Type */}
@@ -677,7 +705,64 @@ function IntakeView({ userId, onAddEntry, cameraPhoto, onCameraPhotoHandled }) {
         </div>
       </div>
 
-      {mode === 'scan' ? (
+      {mode === 'quick' ? (
+        /* ── Quick Add Mode ── */
+        <div className="card">
+          <div className="input-group">
+            <label className="input-label">
+              <Search size={12} style={{ marginRight: 4, verticalAlign: 'middle' }} />
+              Search past meals
+            </label>
+            <input
+              type="text" className="input"
+              placeholder="e.g., Grilled Chicken..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          {historyLoading ? (
+            <div style={{ textAlign: 'center', padding: 24 }}>
+              <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} />
+            </div>
+          ) : filteredMeals.length === 0 ? (
+            <p className="text-muted" style={{ textAlign: 'center', padding: 24, fontSize: 13 }}>
+              {searchQuery ? 'No meals match your search' : 'No previous meals found'}
+            </p>
+          ) : (
+            <div style={{ maxHeight: 340, overflowY: 'auto', margin: '8px -12px', padding: '0 12px' }}>
+              {filteredMeals.map((meal, i) => (
+                <button
+                  key={meal.name + i}
+                  type="button"
+                  onClick={() => handleQuickSelect(meal)}
+                  style={{
+                    width: '100%', display: 'flex', justifyContent: 'space-between',
+                    alignItems: 'center', padding: '12px 0',
+                    borderTop: i > 0 ? '1px solid var(--glass-border)' : 'none',
+                    background: 'transparent', border: 'none', color: 'var(--text-primary)',
+                    cursor: 'pointer', textAlign: 'left',
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 500 }}>{meal.name}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
+                      {meal.calories} kcal · {meal.protein}p · {meal.carbs}c · {meal.fats}f
+                    </div>
+                  </div>
+                  <span style={{
+                    fontSize: 11, color: 'var(--text-muted)',
+                    background: 'var(--glass-bg)', padding: '2px 8px',
+                    borderRadius: 20, whiteSpace: 'nowrap',
+                  }}>
+                    {meal.logCount}x
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : mode === 'scan' ? (
         /* ── AI Estimate Mode ── */
         <form onSubmit={handleScanSubmit}>
           <div className="card">
@@ -860,7 +945,7 @@ function IntakeView({ userId, onAddEntry, cameraPhoto, onCameraPhotoHandled }) {
             )}
           </div>
         </form>
-      ) : (
+      ) : mode === 'manual' ? (
         /* ── Manual Entry Mode ── */
         <form onSubmit={handleManualSubmit}>
           <div className="card">
@@ -938,7 +1023,7 @@ function IntakeView({ userId, onAddEntry, cameraPhoto, onCameraPhotoHandled }) {
             </button>
           </div>
         </form>
-      )}
+      ) : null}
     </div>
   )
 }
