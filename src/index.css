@@ -773,6 +773,51 @@ h1 {
   background: rgba(255, 255, 255, 0.2);
 }
 
+/* ── Meal Detail View ── */
+.meal-detail-back {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 16px;
+  touch-action: manipulation;
+}
+
+.meal-type-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: rgba(249, 115, 22, 0.15);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.macro-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.macro-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border-radius: var(--radius);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+}
+
 /* ── Chart Wrapper ── */
 .chart-wrapper { margin: 12px -4px 0; }
 .chart-wrapper .recharts-text { fill: var(--text-muted); font-size: 11px; }
