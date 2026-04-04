@@ -6,7 +6,7 @@ import { useGoals } from './hooks/useGoals'
 import { useCalorieEstimate } from './hooks/useCalorieEstimate'
 import LoginView from './views/LoginView'
 import {
-  LayoutDashboard, UtensilsCrossed, Calendar, Settings,
+  LayoutDashboard, Plus, UtensilsCrossed, Calendar, Settings,
   PartyPopper, Target, Flame, Egg, Wheat, Droplets,
   Camera, Edit3, Trash2, Check, X, Loader2, Sparkles
 } from 'lucide-react'
