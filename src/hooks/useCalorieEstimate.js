@@ -1,6 +1,31 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 
+function extractJson(text) {
+  // Strip markdown code fences
+  const clean = text.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim()
+
+  // Find outermost JSON object via brace-depth matching
+  let depth = 0
+  let start = -1
+  let end = -1
+  for (let i = 0; i < clean.length; i++) {
+    if (clean[i] === '{') {
+      if (depth === 0) start = i
+      depth++
+    } else if (clean[i] === '}') {
+      depth--
+      if (depth === 0 && start !== -1) {
+        end = i + 1
+        break
+      }
+    }
+  }
+
+  if (start === -1 || end === -1) return null
+  return clean.substring(start, end)
+}
+
 export function useCalorieEstimate() {
   const [estimate, setEstimate] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -12,30 +37,41 @@ export function useCalorieEstimate() {
       return
     }
 
+    if (!base64Image && !description?.trim()) {
+      setError('Provide a photo or describe what you ate')
+      return
+    }
+
     setLoading(true)
     setError(null)
     setEstimate(null)
 
     try {
+      const hasImage = !!base64Image
       const mealLabel = mealType ? mealType.toLowerCase() : null
+
       const prompt = [
-        'Analyze this food photo and estimate the nutritional content.',
+        hasImage
+          ? 'Analyze this food photo and estimate the nutritional content.'
+          : 'Estimate the nutritional content of the following food.',
         description ? `The user describes this as: "${description}".` : '',
         mealLabel ? `This is a ${mealLabel} meal.` : '',
         '',
-        'Identify each food item, estimate its portion size, and provide per-item macros.',
+        hasImage
+          ? 'Identify each food item visible, estimate its portion size, and provide per-item macros.'
+          : 'For each food item mentioned, estimate a typical portion size and provide per-item macros.',
         'Respond with ONLY a JSON object (no markdown, no explanation) in this exact format:',
-        '{',
-        '  "items": [',
-        '    { "name": "food name", "portion": "amount", "calories": 0, "protein": 0, "carbs": 0, "fat": 0 }',
-        '  ],',
-        '  "total": { "name": "summary name", "calories": 0, "protein": 0, "carbs": 0, "fat": 0 }',
-        '}',
+        '{"items":[{"name":"food name","portion":"amount","calories":0,"protein":0,"carbs":0,"fat":0}],"total":{"name":"summary name","calories":0,"protein":0,"carbs":0,"fat":0}}',
         'Values: calories in kcal, protein/carbs/fat in grams. Use integers.',
       ].filter(Boolean).join('\n')
 
+      const body = { message: prompt }
+      if (base64Image) {
+        body.image = base64Image
+      }
+
       const { data, error: fnError } = await supabase.functions.invoke('estimate-calories', {
-        body: { message: prompt, image: base64Image },
+        body,
       })
 
       if (fnError) {
@@ -45,21 +81,24 @@ export function useCalorieEstimate() {
       const responseText = typeof data === 'string' ? data
         : data.reply || data.message || data.text || data.content || JSON.stringify(data)
 
-      // Extract JSON from the response (may be wrapped in markdown code fences)
-      const jsonMatch = responseText.match(/\{[\s\S]*?\}(?=[^}]*$)/)
-      if (!jsonMatch) {
-        throw new Error('Could not parse AI response')
+      // Extract JSON using brace-depth matching
+      const jsonStr = extractJson(responseText)
+      if (!jsonStr) {
+        throw new Error('Could not find JSON in AI response. Raw: ' + responseText.substring(0, 200))
       }
 
-      // Try to find the outermost JSON object
-      const fullJson = responseText.replace(/^[^{]*/, '').replace(/[^}]*$/, '')
-      const parsed = JSON.parse(fullJson)
+      let parsed
+      try {
+        parsed = JSON.parse(jsonStr)
+      } catch (parseErr) {
+        throw new Error('Invalid JSON from AI. Raw: ' + jsonStr.substring(0, 200))
+      }
 
-      // Support both new multi-item format and legacy single-item format
+      // Support both multi-item format and legacy single-item format
       if (parsed.total && parsed.items) {
         const total = parsed.total
         setEstimate({
-          name: total.name || 'Unknown food',
+          name: total.name || description || 'AI Estimate',
           calories: parseInt(total.calories) || 0,
           protein: parseInt(total.protein) || 0,
           carbs: parseInt(total.carbs) || 0,
@@ -74,9 +113,8 @@ export function useCalorieEstimate() {
           })),
         })
       } else {
-        // Backward compat: legacy single-item response
         setEstimate({
-          name: parsed.name || 'Unknown food',
+          name: parsed.name || description || 'AI Estimate',
           calories: parseInt(parsed.calories) || 0,
           protein: parseInt(parsed.protein) || 0,
           carbs: parseInt(parsed.carbs) || 0,
