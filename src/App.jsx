@@ -653,7 +653,7 @@ function IntakeView({ userId, onAddEntry, cameraPhoto, onCameraPhotoHandled }) {
             background: mode === 'scan' ? 'var(--accent)' : 'transparent',
             color: mode === 'scan' ? '#000' : 'var(--text-secondary)',
           }}
-          onClick={() => setMode('scan')}
+          onClick={() => { setMode('scan'); setSearchQuery('') }}
         >
           <Sparkles size={16} />
           AI Estimate
@@ -665,7 +665,7 @@ function IntakeView({ userId, onAddEntry, cameraPhoto, onCameraPhotoHandled }) {
             background: mode === 'manual' ? 'var(--accent)' : 'transparent',
             color: mode === 'manual' ? '#000' : 'var(--text-secondary)',
           }}
-          onClick={() => setMode('manual')}
+          onClick={() => { setMode('manual'); setSearchQuery('') }}
         >
           <Edit3 size={16} />
           Manual Entry
@@ -677,7 +677,7 @@ function IntakeView({ userId, onAddEntry, cameraPhoto, onCameraPhotoHandled }) {
             background: mode === 'quick' ? 'var(--accent)' : 'transparent',
             color: mode === 'quick' ? '#000' : 'var(--text-secondary)',
           }}
-          onClick={() => setMode('quick')}
+          onClick={() => { setMode('quick'); setSearchQuery('') }}
         >
           <History size={16} />
           Quick Add
@@ -1323,6 +1323,22 @@ function TrendsView({ userId, goals, onViewHistory }) {
         <div className="card">
           <div className="empty-state">
             <Loader2 size={32} color="#525252" style={{ animation: 'spin 1s linear infinite' }} />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="view">
+        <h1 className="mb-4" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <TrendingUp size={24} color={ACCENT} />
+          Weekly Trends
+        </h1>
+        <div className="card">
+          <div className="empty-state">
+            <p style={{ color: '#EF4444' }}>Failed to load trends: {error}</p>
           </div>
         </div>
       </div>
