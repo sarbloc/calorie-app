@@ -39,7 +39,7 @@ No test framework is configured.
 
 ### Database tables
 
-- **meals**: `id, user_id, description, meal_type, calories, protein, carbs, fats, created_at`
+- **meals**: `id, user_id, name, description, meal_type, calories, protein, carbs, fats, photo_path, items_json, created_at`
 - **goals**: `id, user_id, target_date, target_calories, target_protein, target_carbs, target_fats, created_at` (upsert)
 - **profiles**: `id, telegram_id, telegram_username, telegram_first_name, telegram_last_name, created_at, updated_at`
 - **storage.meal_photos** bucket: path `/user_id/filename`

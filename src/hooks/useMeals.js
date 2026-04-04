@@ -83,13 +83,23 @@ export function useMeals(userId) {
     fetchMeals()
   }, [fetchMeals])
 
-  const addMeal = async ({ name, calories, protein, carbs, fat, mealType = 'SNACK', photoBase64 = null }) => {
+  const addMeal = async ({ name, description, calories, protein, carbs, fat, mealType = 'SNACK', photoBase64 = null, items = null }) => {
     if (!isSupabaseConfigured || !userId) return { error: 'Not configured' }
 
     // Insert the meal first (without photo_path)
     const { data, error } = await supabase
       .from('meals')
-      .insert([{ user_id: userId, description: name, meal_type: mealType, calories, protein, carbs, fats: fat }])
+      .insert([{
+        user_id: userId,
+        name,
+        description: description || null,
+        meal_type: mealType,
+        calories,
+        protein,
+        carbs,
+        fats: fat,
+        items_json: items || null,
+      }])
       .select()
       .single()
 

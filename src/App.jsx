@@ -204,12 +204,12 @@ function DashboardView({ user, meals, goals }) {
               {entry.photo_path && (
                 <MealPhotoThumb
                   photoPath={entry.photo_path}
-                  alt={entry.description}
+                  alt={entry.name || entry.description}
                   onExpand={setPreviewUrl}
                 />
               )}
               <div className="food-info">
-                <h4>{entry.description}</h4>
+                <h4>{entry.name || entry.description}</h4>
                 <p>{entry.protein || 0}g P · {entry.carbs || 0}g C · {entry.fats || 0}g F</p>
               </div>
               <span className="food-calories">{entry.calories || 0} kcal</span>
@@ -310,12 +310,12 @@ function HistoryView({ userId }) {
                   {entry.photo_path && (
                     <MealPhotoThumb
                       photoPath={entry.photo_path}
-                      alt={entry.description}
+                      alt={entry.name || entry.description}
                       onExpand={setPreviewUrl}
                     />
                   )}
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 500 }}>{entry.description}</div>
+                    <div style={{ fontSize: 13, fontWeight: 500 }}>{entry.name || entry.description}</div>
                     <div className="text-muted" style={{ fontSize: 11 }}>
                       {entry.meal_type?.toLowerCase()} · {entry.protein || 0}g P · {entry.carbs || 0}g C · {entry.fats || 0}g F
                     </div>
@@ -428,12 +428,16 @@ function IntakeView({ userId, onAddEntry, cameraPhoto, onCameraPhotoHandled }) {
     setSubmitting(true)
     await onAddEntry({
       name:     scanName,
+      description: estimate?.items
+        ? estimate.items.map(i => `${i.name} (${i.portion})`).join(', ')
+        : description || null,
       calories: parseInt(scanCalories) || 0,
       protein:  parseInt(scanProtein)  || 0,
       carbs:    parseInt(scanCarbs)    || 0,
       fat:      parseInt(scanFat)      || 0,
       mealType,
       photoBase64: imagePreview,
+      items: estimate?.items || null,
     })
 
     setScanName(''); setScanCalories(''); setScanProtein(''); setScanCarbs(''); setScanFat('')
