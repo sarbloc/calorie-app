@@ -370,7 +370,7 @@ function IntakeView({ userId, onAddEntry, cameraPhoto, onCameraPhotoHandled }) {
   const [scanFat, setScanFat]           = useState('')
   useEffect(() => {
     if (estimate) {
-      setScanName(estimate.name || 'AI Photo Scan')
+      setScanName(estimate.name || 'AI Estimate')
       setScanCalories(String(estimate.calories || 0))
       setScanProtein(String(estimate.protein || 0))
       setScanCarbs(String(estimate.carbs || 0))
@@ -417,8 +417,8 @@ function IntakeView({ userId, onAddEntry, cameraPhoto, onCameraPhotoHandled }) {
   }
 
   const handleEstimate = () => {
-    if (!imagePreview) return
-    estimateCalories(imagePreview, description, mealType)
+    if (!imagePreview && !description.trim()) return
+    estimateCalories(imagePreview || null, description, mealType)
   }
 
   const handleScanSubmit = async (e) => {
@@ -489,8 +489,8 @@ function IntakeView({ userId, onAddEntry, cameraPhoto, onCameraPhotoHandled }) {
           }}
           onClick={() => setMode('scan')}
         >
-          <Camera size={16} />
-          AI Photo Scan
+          <Sparkles size={16} />
+          AI Estimate
         </button>
         <button
           className="btn"
@@ -528,15 +528,31 @@ function IntakeView({ userId, onAddEntry, cameraPhoto, onCameraPhotoHandled }) {
       </div>
 
       {mode === 'scan' ? (
-        /* ── AI Photo Scan Mode ── */
+        /* ── AI Estimate Mode ── */
         <form onSubmit={handleScanSubmit}>
           <div className="card">
+            {/* Description input — always visible before estimation */}
+            {!estimate && (
+              <div className="input-group">
+                <label className="input-label">
+                  <Edit3 size={12} style={{ marginRight: 4, verticalAlign: 'middle' }} />
+                  {imagePreview ? 'Description (optional)' : 'What are you eating?'}
+                </label>
+                <input
+                  type="text" className="input"
+                  placeholder="e.g., 2 eggs and toast with butter"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
+              </div>
+            )}
+
             {/* Photo upload area */}
             {!imagePreview ? (
-              <label className="upload-area">
-                <Camera size={36} color={ACCENT} />
-                <span style={{ fontSize: 14, fontWeight: 500 }}>Tap to take or upload a photo</span>
-                <span className="text-muted" style={{ fontSize: 12 }}>of your meal</span>
+              <label className="upload-area" style={{ marginTop: !estimate ? 4 : 0 }}>
+                <Camera size={32} color={ACCENT} />
+                <span style={{ fontSize: 14, fontWeight: 500 }}>Add a photo</span>
+                <span className="text-muted" style={{ fontSize: 12 }}>optional — improves accuracy</span>
                 <input
                   ref={fileInputRef}
                   type="file" accept="image/*"
@@ -562,24 +578,8 @@ function IntakeView({ userId, onAddEntry, cameraPhoto, onCameraPhotoHandled }) {
               </div>
             )}
 
-            {/* Optional description */}
-            {imagePreview && !estimate && (
-              <div className="input-group" style={{ marginTop: 12 }}>
-                <label className="input-label">
-                  <Edit3 size={12} style={{ marginRight: 4, verticalAlign: 'middle' }} />
-                  Description (optional)
-                </label>
-                <input
-                  type="text" className="input"
-                  placeholder="e.g., Large bowl of pasta with chicken"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                />
-              </div>
-            )}
-
-            {/* Estimate button */}
-            {imagePreview && !estimate && (
+            {/* Estimate button — enabled with image OR description */}
+            {!estimate && (imagePreview || description.trim()) && (
               <button
                 type="button" onClick={handleEstimate}
                 className="btn btn-primary"
@@ -589,7 +589,7 @@ function IntakeView({ userId, onAddEntry, cameraPhoto, onCameraPhotoHandled }) {
                 {estimating ? (
                   <>
                     <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
-                    Analyzing…
+                    Estimating…
                   </>
                 ) : (
                   <>

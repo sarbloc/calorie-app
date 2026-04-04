@@ -1,5 +1,5 @@
 // Supabase Edge Function: Estimate Calories
-// Calls NVIDIA's Kimi K2.5 API directly for vision-based calorie estimation
+// Calls NVIDIA's Kimi K2.5 API for nutrition estimation (image + text or text-only)
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -51,8 +51,36 @@ Deno.serve(async (req) => {
 
     const { image, message } = await req.json()
 
-    if (!image) {
-      return jsonResponse({ error: 'image is required' }, 400)
+    if (!image && !message) {
+      return jsonResponse({ error: 'image or message is required' }, 400)
+    }
+
+    // Build system message based on whether image is provided
+    const systemText = image
+      ? [
+          'You are an expert nutritionist. Analyze the provided food photo and any accompanying text.',
+          'Identify every food item, estimate portion sizes, and calculate nutritional values.',
+          'If the user provides a description, treat it as the primary source of truth.',
+        ].join(' ')
+      : [
+          'You are an expert nutritionist. Based on the food description provided,',
+          'identify all food items, estimate typical portion sizes, and calculate nutritional values.',
+        ].join(' ')
+
+    const systemMessage = [
+      systemText,
+      'Return ONLY a valid JSON object. No markdown, no code fences, no explanation.',
+      'Format: {"items":[{"name":"food","portion":"amount","calories":0,"protein":0,"carbs":0,"fat":0}],"total":{"name":"summary","calories":0,"protein":0,"carbs":0,"fat":0}}',
+      'All numeric values must be integers. Calories in kcal, protein/carbs/fat in grams.',
+    ].join('\n')
+
+    // Build user content conditionally
+    const userContent: Array<Record<string, unknown>> = []
+    if (message) {
+      userContent.push({ type: 'text', text: message })
+    }
+    if (image) {
+      userContent.push({ type: 'image_url', image_url: { url: image } })
     }
 
     const res = await fetch(NVIDIA_URL, {
@@ -65,29 +93,10 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         model: 'moonshotai/kimi-k2.5',
         messages: [
-          {
-            role: 'system',
-            content: [
-              'You are an expert nutritionist and food portion analyst.',
-              'When given a food photo, you must:',
-              '1. Identify every distinct food item visible in the image.',
-              '2. Estimate the portion size of each item using common measurements (cups, pieces, slices, oz, etc.).',
-              '3. Estimate calories (kcal), protein (g), carbs (g), and fat (g) for each item.',
-              '4. If the user provides a description, treat it as the primary source of truth for what the food is.',
-              '5. If a meal type is provided (breakfast, lunch, dinner, snack), use it as context for typical portion sizes.',
-              '6. Think step-by-step internally about portions and composition, but return ONLY valid JSON — no explanation, no markdown fences.',
-              '7. Return an object with "items" (array of identified foods) and "total" (aggregated nutritional values).',
-            ].join(' '),
-          },
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: message },
-              { type: 'image_url', image_url: { url: image } },
-            ],
-          },
+          { role: 'system', content: systemMessage },
+          { role: 'user', content: userContent },
         ],
-        max_tokens: 1024,
+        max_tokens: 2048,
         temperature: 0.3,
         top_p: 1.0,
         stream: false,
@@ -102,6 +111,9 @@ Deno.serve(async (req) => {
 
     const data = await res.json()
     const reply = data.choices?.[0]?.message?.content || ''
+    const finishReason = data.choices?.[0]?.finish_reason || 'unknown'
+    console.log('AI response (first 500):', reply.substring(0, 500))
+    console.log('Finish reason:', finishReason)
     return jsonResponse({ reply })
   } catch (error) {
     console.error('Estimate calories error:', error)
