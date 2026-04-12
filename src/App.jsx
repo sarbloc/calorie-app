@@ -1541,7 +1541,7 @@ export default function App() {
       <div className="bg-blobs" aria-hidden="true" />
       <input
         ref={cameraInputRef}
-        type="file" accept="image/*" capture="environment"
+        type="file" accept="image/*"
         onChange={handleCameraCapture}
         style={{ display: 'none' }}
       />
