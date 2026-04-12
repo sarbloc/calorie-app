@@ -1360,6 +1360,14 @@ function TrendsView({ userId, goals, onViewHistory }) {
             <p>Not enough data yet. Start logging meals!</p>
           </div>
         </div>
+        <button
+          className="btn btn-secondary"
+          style={{ width: '100%', gap: 6, marginTop: 8 }}
+          onClick={onViewHistory}
+        >
+          <Calendar size={16} />
+          View full history
+        </button>
       </div>
     )
   }
