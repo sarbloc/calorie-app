@@ -446,10 +446,15 @@ body {
 /* ── Food Entry ── */
 .food-entry {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 10px;
   padding: 12px 0;
   border-bottom: 1px solid var(--border);
+}
+
+.food-entry .food-info {
+  flex: 1;
+  min-width: 0;
 }
 
 .food-entry:last-child {
