@@ -143,8 +143,12 @@ function DashboardView({ user, meals, goals, onSelectMeal }) {
 
   const consumed = totals.total_calories || 0
   const calorieGoal = g.calorie_goal || 2000
+  const isOver = consumed > calorieGoal
   const remaining = Math.max(0, calorieGoal - consumed)
-  const progress = Math.min((consumed / calorieGoal) * 100, 100)
+  const excess = Math.max(0, consumed - calorieGoal)
+  const goalPortionPct = isOver ? (calorieGoal / consumed) * 100 : (consumed / calorieGoal) * 100
+  const excessPortionPct = isOver ? 100 - goalPortionPct : 0
+  const consumedColor = isOver ? '#EF4444' : '#22C55E'
 
   return (
     <div className="view">
@@ -159,22 +163,49 @@ function DashboardView({ user, meals, goals, onSelectMeal }) {
             <Flame size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} />
             Calories
           </span>
-          <span className="text-muted">{consumed} / {calorieGoal} kcal</span>
+          <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 4 }}>
+            <span style={{ fontSize: 22, fontWeight: 700, color: consumedColor, lineHeight: 1 }}>
+              {consumed}
+            </span>
+            <span className="text-muted" style={{ fontSize: 13 }}>/ {calorieGoal} kcal</span>
+          </span>
         </div>
-        <div className="progress-bar">
-          <div className="progress-fill" style={{ width: `${progress}%` }} />
+        <div className="progress-bar" style={{ display: 'flex' }}>
+          <div
+            className="progress-fill"
+            style={{
+              width: `${goalPortionPct}%`,
+              borderRadius: isOver ? '3px 0 0 3px' : undefined,
+            }}
+          />
+          {isOver && (
+            <div
+              className="progress-fill"
+              style={{
+                width: `${excessPortionPct}%`,
+                background: 'linear-gradient(90deg, #F87171, #DC2626)',
+                boxShadow: '0 0 8px rgba(239, 68, 68, 0.4)',
+                borderRadius: '0 3px 3px 0',
+              }}
+            />
+          )}
         </div>
-        <p className="text-center text-muted mt-2">
-          {remaining > 0 ? (
+        <p className="text-center mt-2" style={{ color: isOver ? '#EF4444' : undefined }}>
+          {isOver ? (
             <>
+              <Flame size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} />
+              {excess} over
+            </>
+          ) : remaining > 0 ? (
+            <span className="text-muted">
               <Droplets size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} />
               {remaining} remaining
-            </>
+            </span>
           ) : (
-            <>
+            <span className="text-muted">
               <PartyPopper size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} />
               Goal reached!
-            </>
+            </span>
           )}
         </p>
       </div>
