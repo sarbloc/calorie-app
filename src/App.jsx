@@ -656,7 +656,7 @@ function IntakeView({ userId, onAddEntry, cameraPhoto, onCameraPhotoHandled }) {
           onClick={() => { setMode('scan'); setSearchQuery('') }}
         >
           <Sparkles size={16} />
-          AI Estimate
+          AI
         </button>
         <button
           className="btn"
@@ -668,7 +668,7 @@ function IntakeView({ userId, onAddEntry, cameraPhoto, onCameraPhotoHandled }) {
           onClick={() => { setMode('manual'); setSearchQuery('') }}
         >
           <Edit3 size={16} />
-          Manual Entry
+          Enter
         </button>
         <button
           className="btn"
@@ -680,7 +680,7 @@ function IntakeView({ userId, onAddEntry, cameraPhoto, onCameraPhotoHandled }) {
           onClick={() => { setMode('quick'); setSearchQuery('') }}
         >
           <History size={16} />
-          Quick Add
+          Add
         </button>
       </div>
 
