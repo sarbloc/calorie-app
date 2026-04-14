@@ -75,7 +75,15 @@ export function useCalorieEstimate() {
       })
 
       if (fnError) {
-        throw new Error(fnError.message || 'Estimation request failed')
+        // Try to read the structured error body from the function response
+        let errBody = null
+        try {
+          errBody = await fnError.context?.json?.()
+        } catch { /* ignore parse failure */ }
+        if (errBody?.code === 'not_allowed') {
+          throw new Error("AI estimation isn't enabled for your account. Ask the app owner to add you, or use Manual Entry instead.")
+        }
+        throw new Error(errBody?.error || fnError.message || 'Estimation request failed')
       }
 
       const responseText = typeof data === 'string' ? data

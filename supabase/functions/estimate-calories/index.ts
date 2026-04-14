@@ -6,6 +6,10 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')
+const ALLOWED_TELEGRAM_IDS = (Deno.env.get('ALLOWED_TELEGRAM_IDS') ?? '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean)
 
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages'
 
@@ -47,6 +51,18 @@ Deno.serve(async (req) => {
     if (authError || !user) {
       console.error('Auth verification failed:', authError?.message)
       return jsonResponse({ error: 'Unauthorized' }, 401)
+    }
+
+    // Allowlist gate: only approved Telegram accounts may call the LLM.
+    // Telegram ID is verified via HMAC in telegram-auth and stored in user_metadata.
+    const telegramId = String(user.user_metadata?.telegram_id ?? '')
+    if (ALLOWED_TELEGRAM_IDS.length === 0) {
+      console.error('ALLOWED_TELEGRAM_IDS is not configured — refusing all requests')
+      return jsonResponse({ error: 'AI estimation is not enabled', code: 'not_allowed' }, 403)
+    }
+    if (!telegramId || !ALLOWED_TELEGRAM_IDS.includes(telegramId)) {
+      console.warn(`Blocked estimate request from telegram_id=${telegramId || 'unknown'}`)
+      return jsonResponse({ error: 'AI estimation is not enabled for your account', code: 'not_allowed' }, 403)
     }
 
     const { image, message } = await req.json()
