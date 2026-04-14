@@ -509,6 +509,7 @@ function IntakeView({ userId, onAddEntry, cameraPhoto, onCameraPhotoHandled }) {
   const [uploading, setUploading]       = useState(false)
   const [submitting, setSubmitting]     = useState(false)
   const [submitted, setSubmitted]       = useState(false)
+  const [formError, setFormError]       = useState('')
   const fileInputRef = useRef(null)
 
   // AI estimation
@@ -573,7 +574,12 @@ function IntakeView({ userId, onAddEntry, cameraPhoto, onCameraPhotoHandled }) {
 
   const handleScanSubmit = async (e) => {
     e.preventDefault()
-    if (!scanName || !scanCalories || !mealType) return
+    if (!scanName || !scanCalories) return
+    if (!mealType) {
+      setFormError('Please select a meal type')
+      return
+    }
+    setFormError('')
 
     setSubmitting(true)
     await onAddEntry({
@@ -615,7 +621,12 @@ function IntakeView({ userId, onAddEntry, cameraPhoto, onCameraPhotoHandled }) {
 
   const handleManualSubmit = async (e) => {
     e.preventDefault()
-    if (!name || !calories || !mealType) return
+    if (!name || !calories) return
+    if (!mealType) {
+      setFormError('Please select a meal type')
+      return
+    }
+    setFormError('')
 
     setSubmitting(true)
     await onAddEntry({
@@ -653,7 +664,7 @@ function IntakeView({ userId, onAddEntry, cameraPhoto, onCameraPhotoHandled }) {
             background: mode === 'scan' ? 'var(--accent)' : 'transparent',
             color: mode === 'scan' ? '#000' : 'var(--text-secondary)',
           }}
-          onClick={() => { setMode('scan'); setSearchQuery('') }}
+          onClick={() => { setMode('scan'); setSearchQuery(''); setFormError('') }}
         >
           <Sparkles size={16} />
           AI
@@ -665,7 +676,7 @@ function IntakeView({ userId, onAddEntry, cameraPhoto, onCameraPhotoHandled }) {
             background: mode === 'manual' ? 'var(--accent)' : 'transparent',
             color: mode === 'manual' ? '#000' : 'var(--text-secondary)',
           }}
-          onClick={() => { setMode('manual'); setSearchQuery('') }}
+          onClick={() => { setMode('manual'); setSearchQuery(''); setFormError('') }}
         >
           <Edit3 size={16} />
           Enter
@@ -677,7 +688,7 @@ function IntakeView({ userId, onAddEntry, cameraPhoto, onCameraPhotoHandled }) {
             background: mode === 'quick' ? 'var(--accent)' : 'transparent',
             color: mode === 'quick' ? '#000' : 'var(--text-secondary)',
           }}
-          onClick={() => { setMode('quick'); setSearchQuery('') }}
+          onClick={() => { setMode('quick'); setSearchQuery(''); setFormError('') }}
         >
           <History size={16} />
           Add
@@ -695,9 +706,9 @@ function IntakeView({ userId, onAddEntry, cameraPhoto, onCameraPhotoHandled }) {
               key={type} type="button"
               className={`chip ${mealType === type ? 'active' : ''}`}
               style={{
-                border: !mealType && submitting ? '1px solid var(--danger)' : undefined,
+                border: formError ? '1px solid var(--danger)' : undefined,
               }}
-              onClick={() => setMealType(type)}
+              onClick={() => { setMealType(type); setFormError('') }}
             >
               {type.toLowerCase()}
             </button>
@@ -922,7 +933,7 @@ function IntakeView({ userId, onAddEntry, cameraPhoto, onCameraPhotoHandled }) {
                   type="submit"
                   className="btn btn-primary"
                   style={{ width: '100%', marginTop: 8, gap: 6 }}
-                  disabled={submitting || !scanName || !scanCalories || !mealType}
+                  disabled={submitting || !scanName || !scanCalories}
                 >
                   {submitted ? (
                     <>
@@ -941,6 +952,11 @@ function IntakeView({ userId, onAddEntry, cameraPhoto, onCameraPhotoHandled }) {
                     </>
                   )}
                 </button>
+                {formError && (
+                  <p style={{ color: '#EF4444', fontSize: 13, marginTop: 8, textAlign: 'center' }}>
+                    {formError}
+                  </p>
+                )}
               </>
             )}
           </div>
@@ -1002,7 +1018,7 @@ function IntakeView({ userId, onAddEntry, cameraPhoto, onCameraPhotoHandled }) {
               type="submit"
               className="btn btn-primary"
               style={{ width: '100%', marginTop: 8, gap: 6 }}
-              disabled={submitting || !name || !calories || !mealType}
+              disabled={submitting || !name || !calories}
             >
               {submitted ? (
                 <>
@@ -1021,6 +1037,11 @@ function IntakeView({ userId, onAddEntry, cameraPhoto, onCameraPhotoHandled }) {
                 </>
               )}
             </button>
+            {formError && (
+              <p style={{ color: '#EF4444', fontSize: 13, marginTop: 8, textAlign: 'center' }}>
+                {formError}
+              </p>
+            )}
           </div>
         </form>
       ) : null}
